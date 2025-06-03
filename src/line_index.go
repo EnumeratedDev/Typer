@@ -19,7 +19,7 @@ func drawLineIndex(window *Window) {
 		y = 1
 	}
 
-	for lineIndex := 1; lineIndex <= strings.Count(buffer.Contents, "\n") && lineIndex < sizeY; lineIndex++ {
+	for lineIndex := 1; lineIndex <= strings.Count(buffer.Contents, "\n")+1 && lineIndex < sizeY; lineIndex++ {
 		drawText(screen, 0, y, 3, y, lineIndexStyle, strconv.Itoa(lineIndex)+". ")
 		y++
 	}

@@ -76,7 +76,7 @@ func CreateBuffer(bufferName string) *Buffer {
 	buffer := Buffer{
 		Id:       LastBufferId + 1,
 		Name:     bufferName,
-		Contents: "\n",
+		Contents: "",
 		LoadFunc: func(buffer *Buffer) error { return nil },
 		SaveFunc: func(buffer *Buffer) error { return nil },
 	}

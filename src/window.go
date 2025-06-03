@@ -140,6 +140,51 @@ func (window *Window) Draw() {
 		if ev.Key() == tcell.KeyCtrlC {
 			window.Close()
 		}
+
+		// Typing
+		if ev.Key() == tcell.KeyBackspace2 {
+			str := window.textArea.CurrentBuffer.Contents
+			index := window.textArea.CursorPos
+
+			if index != 0 {
+				str = str[:index-1] + str[index:]
+				window.textArea.CursorPos--
+				window.textArea.CurrentBuffer.Contents = str
+			}
+		} else if ev.Key() == tcell.KeyTab {
+			str := window.textArea.CurrentBuffer.Contents
+			index := window.textArea.CursorPos
+
+			if index == len(str) {
+				str += "\t"
+			} else {
+				str = str[:index] + "\t" + str[index:]
+			}
+			window.textArea.CursorPos++
+			window.textArea.CurrentBuffer.Contents = str
+		} else if ev.Key() == tcell.KeyEnter {
+			str := window.textArea.CurrentBuffer.Contents
+			index := window.textArea.CursorPos
+
+			if index == len(str) {
+				str += "\n"
+			} else {
+				str = str[:index] + "\n" + str[index:]
+			}
+			window.textArea.CursorPos++
+			window.textArea.CurrentBuffer.Contents = str
+		} else if ev.Key() == tcell.KeyRune {
+			str := window.textArea.CurrentBuffer.Contents
+			index := window.textArea.CursorPos
+
+			if index == len(str) {
+				str += string(ev.Rune())
+			} else {
+				str = str[:index] + string(ev.Rune()) + str[index:]
+			}
+			window.textArea.CursorPos++
+			window.textArea.CurrentBuffer.Contents = str
+		}
 	}
 }
 
@@ -197,8 +242,8 @@ func (window *Window) SetCursorPos(position int) {
 		window.textArea.CursorPos = 0
 	}
 
-	if window.textArea.CursorPos > len(window.textArea.CurrentBuffer.Contents)-1 {
-		window.textArea.CursorPos = len(window.textArea.CurrentBuffer.Contents) - 1
+	if window.textArea.CursorPos > len(window.textArea.CurrentBuffer.Contents) {
+		window.textArea.CursorPos = len(window.textArea.CurrentBuffer.Contents)
 	}
 }
 
@@ -214,7 +259,7 @@ func (window *Window) SetCursorPos2D(x, y int) {
 	var str string
 	for i, char := range window.textArea.CurrentBuffer.Contents {
 		str += string(char)
-		if char == '\n' {
+		if char == '\n' || i == len(window.textArea.CurrentBuffer.Contents) {
 			lines = append(lines, struct {
 				charIndex int
 				str       string
@@ -223,8 +268,14 @@ func (window *Window) SetCursorPos2D(x, y int) {
 		}
 	}
 
-	y = min(y, len(lines)-1)
-	x = min(x, len(lines[y].str)-1)
+	y = min(y, len(lines))
 
-	window.SetCursorPos(lines[y].charIndex + x)
+	if y == len(lines) {
+		x = 0
+		window.SetCursorPos(lines[y-1].charIndex + len(lines[y-1].str) + 1)
+	} else {
+		x = min(x, len(lines[y].str)-1)
+		window.SetCursorPos(lines[y].charIndex + x)
+	}
+
 }
