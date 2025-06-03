@@ -1,0 +1,232 @@
+package main
+
+import (
+	"github.com/gdamore/tcell"
+	"log"
+)
+
+type Window struct {
+	ShowTopMenu   bool
+	ShowLineIndex bool
+
+	textArea TextArea
+
+	screen tcell.Screen
+}
+
+type TextArea struct {
+	CursorPos     int
+	CurrentBuffer *Buffer
+}
+
+func CreateWindow(initialBuffer *Buffer) (*Window, error) {
+	window := Window{
+		ShowTopMenu:   true,
+		ShowLineIndex: true,
+
+		textArea: TextArea{
+			CursorPos:     0,
+			CurrentBuffer: initialBuffer,
+		},
+
+		screen: nil,
+	}
+
+	// Create empty buffer if nil
+	if window.textArea.CurrentBuffer == nil {
+		window.textArea.CurrentBuffer = CreateBuffer("New File")
+	}
+
+	// Create tcell screen
+	screen, err := tcell.NewScreen()
+	if err != nil {
+		log.Fatalf("Failed to initialize tcell: %s", err)
+	}
+
+	if err := screen.Init(); err != nil {
+		log.Fatalf("Failed to initialize screen: %s", err)
+	}
+
+	// Set screen style
+	screen.SetStyle(tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color234))
+
+	// Set window screen field
+	window.screen = screen
+
+	// Initialize top menu
+	initTopMenu()
+
+	return &window, nil
+}
+
+func (window *Window) drawCurrentBuffer() {
+	buffer := window.textArea.CurrentBuffer
+
+	x, y := 0, 0
+	if window.ShowTopMenu {
+		y++
+	}
+	if window.ShowLineIndex {
+		x += 3
+	}
+
+	width, _ := window.screen.Size()
+
+	for _, r := range []rune(buffer.Contents) {
+		if x >= width || r == '\n' {
+			x = 0
+			if window.ShowLineIndex {
+				x += 3
+			}
+			y++
+		}
+
+		window.screen.SetContent(x, y, r, nil, tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color234))
+
+		if r != '\n' {
+			x++
+		}
+	}
+}
+
+func (window *Window) Draw() {
+	// Clear screen
+	window.screen.Clear()
+
+	// Draw top menu
+	if window.ShowTopMenu {
+		drawTopMenu(window)
+	}
+
+	// Draw line index
+	if window.ShowLineIndex {
+		drawLineIndex(window)
+	}
+
+	// Draw current buffer
+	if window.textArea.CurrentBuffer != nil {
+		window.drawCurrentBuffer()
+	}
+
+	// Draw message bar
+	drawMessageBar(window)
+
+	// Draw cursor
+	window.screen.ShowCursor(window.GetAbsoluteCursorPos())
+
+	// Update screen
+	window.screen.Show()
+
+	// Poll event
+	ev := window.screen.PollEvent()
+
+	// Process event
+	switch ev := ev.(type) {
+	case *tcell.EventResize:
+		window.screen.Sync()
+	case *tcell.EventKey:
+		// Navigation Keys
+		if ev.Key() == tcell.KeyRight {
+			window.SetCursorPos(window.textArea.CursorPos + 1)
+		} else if ev.Key() == tcell.KeyLeft {
+			window.SetCursorPos(window.textArea.CursorPos - 1)
+		} else if ev.Key() == tcell.KeyUp {
+			x, y := window.GetCursorPos2D()
+			window.SetCursorPos2D(x, y-1)
+		} else if ev.Key() == tcell.KeyDown {
+			x, y := window.GetCursorPos2D()
+			window.SetCursorPos2D(x, y+1)
+		}
+
+		// Exit key
+		if ev.Key() == tcell.KeyCtrlC {
+			window.Close()
+		}
+	}
+}
+
+func (window *Window) Close() {
+	window.screen.Fini()
+	window.screen = nil
+}
+
+func (window *Window) GetTextAreaDimensions() (int, int, int, int) {
+	x1, y1 := 0, 0
+	x2, y2 := window.screen.Size()
+
+	if window.ShowTopMenu {
+		y1++
+	}
+
+	if window.ShowLineIndex {
+		x1 += 3
+	}
+
+	return x1, y1, x2, y2
+}
+
+func (window *Window) GetAbsoluteCursorPos() (int, int) {
+	cursorX, cursorY := window.GetCursorPos2D()
+
+	x1, y1, _, _ := window.GetTextAreaDimensions()
+	cursorX += x1
+	cursorY += y1
+
+	return cursorX, cursorY
+}
+
+func (window *Window) GetCursorPos2D() (int, int) {
+	cursorX := 0
+	cursorY := 0
+
+	for i := 0; i < window.textArea.CursorPos; i++ {
+		char := window.textArea.CurrentBuffer.Contents[i]
+		if char == '\n' {
+			cursorY++
+			cursorX = 0
+		} else {
+			cursorX++
+		}
+	}
+
+	return cursorX, cursorY
+}
+
+func (window *Window) SetCursorPos(position int) {
+	window.textArea.CursorPos = position
+
+	if window.textArea.CursorPos < 0 {
+		window.textArea.CursorPos = 0
+	}
+
+	if window.textArea.CursorPos > len(window.textArea.CurrentBuffer.Contents)-1 {
+		window.textArea.CursorPos = len(window.textArea.CurrentBuffer.Contents) - 1
+	}
+}
+
+func (window *Window) SetCursorPos2D(x, y int) {
+	x = max(x, 0)
+	y = max(y, 0)
+
+	lines := make([]struct {
+		charIndex int
+		str       string
+	}, 0)
+
+	var str string
+	for i, char := range window.textArea.CurrentBuffer.Contents {
+		str += string(char)
+		if char == '\n' {
+			lines = append(lines, struct {
+				charIndex int
+				str       string
+			}{charIndex: i - len(str) + 1, str: str})
+			str = ""
+		}
+	}
+
+	y = min(y, len(lines)-1)
+	x = min(x, len(lines[y].str)-1)
+
+	window.SetCursorPos(lines[y].charIndex + x)
+}
