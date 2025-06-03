@@ -19,23 +19,21 @@ type TextArea struct {
 	CurrentBuffer *Buffer
 }
 
-func CreateWindow(initialBuffer *Buffer) (*Window, error) {
+func CreateWindow() (*Window, error) {
 	window := Window{
 		ShowTopMenu:   true,
 		ShowLineIndex: true,
 
 		textArea: TextArea{
 			CursorPos:     0,
-			CurrentBuffer: initialBuffer,
+			CurrentBuffer: nil,
 		},
 
 		screen: nil,
 	}
 
 	// Create empty buffer if nil
-	if window.textArea.CurrentBuffer == nil {
-		window.textArea.CurrentBuffer = CreateBuffer("New File")
-	}
+	window.textArea.CurrentBuffer = CreateBuffer("New File")
 
 	// Create tcell screen
 	screen, err := tcell.NewScreen()
