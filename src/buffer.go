@@ -68,6 +68,7 @@ func CreateFileBuffer(filename string) (*Buffer, error) {
 	}
 
 	Buffers[buffer.Id] = &buffer
+	LastBufferId++
 
 	return &buffer, nil
 }
@@ -82,6 +83,7 @@ func CreateBuffer(bufferName string) *Buffer {
 	}
 
 	Buffers[buffer.Id] = &buffer
+	LastBufferId++
 
 	return &buffer
 }

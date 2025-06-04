@@ -1,11 +1,18 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gdamore/tcell"
+	"maps"
+	"slices"
+	"strconv"
+	"strings"
 )
 
 type TopMenuButton struct {
-	Name string
+	Name   string
+	Key    rune
+	Action func(w *Window)
 }
 
 var TopMenuButtons = make([]TopMenuButton, 0)
@@ -14,12 +21,80 @@ func initTopMenu() {
 	// Buttons
 	fileButton := TopMenuButton{
 		Name: "File",
+		Key:  'f',
+		Action: func(window *Window) {
+			dropdowns = make([]*Dropdown, 0)
+			d := CreateDropdownMenu([]string{"New", "Save", "Open", "Close", "Quit"}, 0, 1, 0, func(i int) {
+				switch i {
+				case 0:
+					number := 1
+					for _, buffer := range Buffers {
+						if strings.HasPrefix(buffer.Name, "New File ") {
+							number++
+						}
+					}
+					buffer := CreateBuffer(fmt.Sprintf("New File %d", number))
+					window.textArea.CurrentBuffer = buffer
+					window.SetCursorPos(0)
+				case 1:
+				case 2:
+				case 3:
+					delete(Buffers, window.textArea.CurrentBuffer.Id)
+					buffersSlice := slices.Collect(maps.Values(Buffers))
+					if len(buffersSlice) == 0 {
+						window.Close()
+						return
+					}
+					window.textArea.CurrentBuffer = buffersSlice[0]
+					window.SetCursorPos(0)
+				case 4:
+					window.Close()
+				}
+				dropdowns = make([]*Dropdown, 0)
+				window.textArea.Typing = true
+			})
+			d.Active = true
+			window.textArea.Typing = false
+		},
 	}
 	EditButton := TopMenuButton{
 		Name: "Edit",
+		Key:  'e',
 	}
 	Buffers := TopMenuButton{
 		Name: "Buffers",
+		Key:  'b',
+		Action: func(window *Window) {
+			dropdowns = make([]*Dropdown, 0)
+			buffersSlice := make([]string, 0)
+			for _, buffer := range Buffers {
+				if window.textArea.CurrentBuffer == buffer {
+					buffersSlice = append(buffersSlice, fmt.Sprintf("[%d] * %s", buffer.Id, buffer.Name))
+				} else {
+					buffersSlice = append(buffersSlice, fmt.Sprintf("[%d] %s", buffer.Id, buffer.Name))
+				}
+			}
+
+			slices.Sort(buffersSlice)
+
+			d := CreateDropdownMenu(buffersSlice, 0, 1, 0, func(i int) {
+				start := strings.Index(buffersSlice[i], "[")
+				end := strings.Index(buffersSlice[i], "]")
+
+				id, err := strconv.Atoi(buffersSlice[i][start+1 : end])
+				if err != nil {
+					PrintMessage(window, fmt.Sprintf("Cannot convert buffer id '%s' to int", buffersSlice[i][start:end]))
+					return
+				}
+
+				window.textArea.CurrentBuffer = Buffers[id]
+				window.SetCursorPos(0)
+				dropdowns = make([]*Dropdown, 0)
+				window.textArea.Typing = true
+			})
+			d.Active = true
+			window.textArea.Typing = false
+		},
 	}
 
 	// Append buttons

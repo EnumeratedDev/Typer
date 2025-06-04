@@ -3,6 +3,8 @@ package main
 import (
 	"github.com/gdamore/tcell"
 	"log"
+	"maps"
+	"slices"
 )
 
 type Window struct {
@@ -16,6 +18,7 @@ type Window struct {
 
 type TextArea struct {
 	CursorPos     int
+	Typing        bool
 	CurrentBuffer *Buffer
 }
 
@@ -26,6 +29,7 @@ func CreateWindow() (*Window, error) {
 
 		textArea: TextArea{
 			CursorPos:     0,
+			Typing:        true,
 			CurrentBuffer: nil,
 		},
 
@@ -33,7 +37,7 @@ func CreateWindow() (*Window, error) {
 	}
 
 	// Create empty buffer if nil
-	window.textArea.CurrentBuffer = CreateBuffer("New File")
+	window.textArea.CurrentBuffer = CreateBuffer("New File 1")
 
 	// Create tcell screen
 	screen, err := tcell.NewScreen()
@@ -109,8 +113,15 @@ func (window *Window) Draw() {
 	// Draw message bar
 	drawMessageBar(window)
 
+	// Draw dropdowns
+	drawDropdowns(window)
+
 	// Draw cursor
-	window.screen.ShowCursor(window.GetAbsoluteCursorPos())
+	if window.textArea.Typing {
+		window.screen.ShowCursor(window.GetAbsoluteCursorPos())
+	} else {
+		window.screen.HideCursor()
+	}
 
 	// Update screen
 	window.screen.Show()
@@ -123,46 +134,93 @@ func (window *Window) Draw() {
 	case *tcell.EventResize:
 		window.screen.Sync()
 	case *tcell.EventKey:
-		// Navigation Keys
-		if ev.Key() == tcell.KeyRight {
+		window.input(ev)
+	}
+}
+
+func (window *Window) input(ev *tcell.EventKey) {
+	if ev.Key() == tcell.KeyRight { // Navigation Keys
+		if window.textArea.Typing {
 			window.SetCursorPos(window.textArea.CursorPos + 1)
-		} else if ev.Key() == tcell.KeyLeft {
+		}
+	} else if ev.Key() == tcell.KeyLeft {
+		if window.textArea.Typing {
 			window.SetCursorPos(window.textArea.CursorPos - 1)
-		} else if ev.Key() == tcell.KeyUp {
+		}
+	} else if ev.Key() == tcell.KeyUp {
+		if window.textArea.Typing {
 			x, y := window.GetCursorPos2D()
 			window.SetCursorPos2D(x, y-1)
-		} else if ev.Key() == tcell.KeyDown {
+		} else if GetActiveDropdown() != nil {
+			dropdown := GetActiveDropdown()
+			dropdown.Selected--
+			if dropdown.Selected < 0 {
+				dropdown.Selected = 0
+			}
+		}
+	} else if ev.Key() == tcell.KeyDown {
+		if window.textArea.Typing {
 			x, y := window.GetCursorPos2D()
 			window.SetCursorPos2D(x, y+1)
+		} else if GetActiveDropdown() != nil {
+			dropdown := GetActiveDropdown()
+			dropdown.Selected++
+			if dropdown.Selected >= len(dropdown.Options) {
+				dropdown.Selected = len(dropdown.Options) - 1
+			}
 		}
-
-		// Exit key
-		if ev.Key() == tcell.KeyCtrlC {
+	} else if ev.Key() == tcell.KeyEscape {
+		dropdowns = make([]*Dropdown, 0)
+		window.textArea.Typing = true
+	} else if ev.Key() == tcell.KeyCtrlC { // Close buffer key
+		delete(Buffers, window.textArea.CurrentBuffer.Id)
+		buffersSlice := slices.Collect(maps.Values(Buffers))
+		if len(buffersSlice) == 0 {
 			window.Close()
+			return
+		}
+		window.textArea.CurrentBuffer = buffersSlice[0]
+		window.SetCursorPos(0)
+		dropdowns = make([]*Dropdown, 0)
+		window.textArea.Typing = true
+	} else if ev.Key() == tcell.KeyCtrlQ { // Exit key
+		window.Close()
+	} else if ev.Modifiers()&tcell.ModAlt != 0 { // Menu Bar
+		for _, button := range TopMenuButtons {
+			if ev.Rune() == button.Key {
+				button.Action(window)
+				break
+			}
+		}
+	} else if ev.Key() == tcell.KeyBackspace2 { // Typing
+		str := window.textArea.CurrentBuffer.Contents
+		index := window.textArea.CursorPos
+
+		if index != 0 {
+			str = str[:index-1] + str[index:]
+			window.textArea.CursorPos--
+			window.textArea.CurrentBuffer.Contents = str
+		}
+	} else if ev.Key() == tcell.KeyTab {
+		if GetActiveDropdown() != nil {
+			return
 		}
 
-		// Typing
-		if ev.Key() == tcell.KeyBackspace2 {
-			str := window.textArea.CurrentBuffer.Contents
-			index := window.textArea.CursorPos
+		str := window.textArea.CurrentBuffer.Contents
+		index := window.textArea.CursorPos
 
-			if index != 0 {
-				str = str[:index-1] + str[index:]
-				window.textArea.CursorPos--
-				window.textArea.CurrentBuffer.Contents = str
-			}
-		} else if ev.Key() == tcell.KeyTab {
-			str := window.textArea.CurrentBuffer.Contents
-			index := window.textArea.CursorPos
-
-			if index == len(str) {
-				str += "\t"
-			} else {
-				str = str[:index] + "\t" + str[index:]
-			}
-			window.textArea.CursorPos++
-			window.textArea.CurrentBuffer.Contents = str
-		} else if ev.Key() == tcell.KeyEnter {
+		if index == len(str) {
+			str += "\t"
+		} else {
+			str = str[:index] + "\t" + str[index:]
+		}
+		window.textArea.CursorPos++
+		window.textArea.CurrentBuffer.Contents = str
+	} else if ev.Key() == tcell.KeyEnter {
+		if GetActiveDropdown() != nil {
+			d := GetActiveDropdown()
+			d.Action(d.Selected)
+		} else {
 			str := window.textArea.CurrentBuffer.Contents
 			index := window.textArea.CursorPos
 
@@ -173,18 +231,22 @@ func (window *Window) Draw() {
 			}
 			window.textArea.CursorPos++
 			window.textArea.CurrentBuffer.Contents = str
-		} else if ev.Key() == tcell.KeyRune {
-			str := window.textArea.CurrentBuffer.Contents
-			index := window.textArea.CursorPos
-
-			if index == len(str) {
-				str += string(ev.Rune())
-			} else {
-				str = str[:index] + string(ev.Rune()) + str[index:]
-			}
-			window.textArea.CursorPos++
-			window.textArea.CurrentBuffer.Contents = str
 		}
+	} else if ev.Key() == tcell.KeyRune {
+		if GetActiveDropdown() != nil {
+			return
+		}
+
+		str := window.textArea.CurrentBuffer.Contents
+		index := window.textArea.CursorPos
+
+		if index == len(str) {
+			str += string(ev.Rune())
+		} else {
+			str = str[:index] + string(ev.Rune()) + str[index:]
+		}
+		window.textArea.CursorPos++
+		window.textArea.CurrentBuffer.Contents = str
 	}
 }
 

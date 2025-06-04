@@ -20,7 +20,7 @@ func main() {
 				PrintMessage(window, "Could not open file: "+file)
 				continue
 			}
-			Buffers[b.Id] = b
+
 			if initialBuffer == nil {
 				initialBuffer = b
 			}
@@ -28,7 +28,6 @@ func main() {
 	}
 
 	if initialBuffer != nil {
-		delete(Buffers, window.textArea.CurrentBuffer.Id)
 		window.textArea.CurrentBuffer = initialBuffer
 	}
 

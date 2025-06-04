@@ -1,0 +1,72 @@
+package main
+
+import (
+	"github.com/gdamore/tcell"
+)
+
+type Dropdown struct {
+	Active     bool
+	Selected   int
+	Options    []string
+	PosX, PosY int
+	Width      int
+	Action     func(int)
+}
+
+var dropdowns = make([]*Dropdown, 0)
+
+func CreateDropdownMenu(options []string, posX, posY, dropdownWidth int, action func(int)) *Dropdown {
+	if len(options) == 0 {
+		return nil
+	}
+
+	width := 0
+
+	if dropdownWidth <= 0 {
+		for _, option := range options {
+			if len(option) > width {
+				width = len(option)
+			}
+		}
+	}
+
+	d := &Dropdown{
+		Active:   false,
+		Selected: 0,
+		Options:  options,
+		PosX:     posX,
+		PosY:     posY,
+		Width:    width,
+		Action:   action,
+	}
+
+	dropdowns = append(dropdowns, d)
+
+	return d
+}
+
+func GetActiveDropdown() *Dropdown {
+	for _, dropdown := range dropdowns {
+		if dropdown.Active {
+			return dropdown
+		}
+	}
+	return nil
+}
+
+func drawDropdowns(window *Window) {
+	dropdownStyle := tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorWhite)
+	for _, d := range dropdowns {
+		drawBox(window.screen, d.PosX, d.PosY, d.PosX+d.Width+1, d.PosY+len(d.Options)+1, dropdownStyle)
+		line := d.PosY
+		for i, option := range d.Options {
+			if d.Selected == i {
+				drawText(window.screen, d.PosX+1, d.PosY+line, d.PosX+d.Width+1, d.PosY+line, dropdownStyle.Background(tcell.Color250), option)
+			} else {
+				drawText(window.screen, d.PosX+1, d.PosY+line, d.PosX+d.Width+1, d.PosY+line, dropdownStyle, option)
+			}
+
+			line++
+		}
+	}
+}
