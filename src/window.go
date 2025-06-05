@@ -7,9 +7,19 @@ import (
 	"slices"
 )
 
+type CursorMode uint8
+
+const (
+	CursorModeDisabled CursorMode = iota
+	CursorModeBuffer
+	CursorModeDropdown
+	CursorModeMessageBar
+)
+
 type Window struct {
 	ShowTopMenu   bool
 	ShowLineIndex bool
+	CursorMode    CursorMode
 
 	textArea TextArea
 
@@ -18,7 +28,6 @@ type Window struct {
 
 type TextArea struct {
 	CursorPos     int
-	Typing        bool
 	CurrentBuffer *Buffer
 }
 
@@ -26,10 +35,10 @@ func CreateWindow() (*Window, error) {
 	window := Window{
 		ShowTopMenu:   true,
 		ShowLineIndex: true,
+		CursorMode:    CursorModeBuffer,
 
 		textArea: TextArea{
 			CursorPos:     0,
-			Typing:        true,
 			CurrentBuffer: nil,
 		},
 
@@ -117,7 +126,7 @@ func (window *Window) Draw() {
 	drawDropdowns(window)
 
 	// Draw cursor
-	if window.textArea.Typing {
+	if window.CursorMode == CursorModeBuffer {
 		window.screen.ShowCursor(window.GetAbsoluteCursorPos())
 	} else {
 		window.screen.HideCursor()
@@ -140,38 +149,38 @@ func (window *Window) Draw() {
 
 func (window *Window) input(ev *tcell.EventKey) {
 	if ev.Key() == tcell.KeyRight { // Navigation Keys
-		if window.textArea.Typing {
+		if window.CursorMode == CursorModeBuffer {
 			window.SetCursorPos(window.textArea.CursorPos + 1)
 		}
 	} else if ev.Key() == tcell.KeyLeft {
-		if window.textArea.Typing {
+		if window.CursorMode == CursorModeBuffer {
 			window.SetCursorPos(window.textArea.CursorPos - 1)
 		}
 	} else if ev.Key() == tcell.KeyUp {
-		if window.textArea.Typing {
+		if window.CursorMode == CursorModeBuffer {
 			x, y := window.GetCursorPos2D()
 			window.SetCursorPos2D(x, y-1)
-		} else if GetActiveDropdown() != nil {
-			dropdown := GetActiveDropdown()
+		} else if ActiveDropdown != nil {
+			dropdown := ActiveDropdown
 			dropdown.Selected--
 			if dropdown.Selected < 0 {
 				dropdown.Selected = 0
 			}
 		}
 	} else if ev.Key() == tcell.KeyDown {
-		if window.textArea.Typing {
+		if window.CursorMode == CursorModeBuffer {
 			x, y := window.GetCursorPos2D()
 			window.SetCursorPos2D(x, y+1)
-		} else if GetActiveDropdown() != nil {
-			dropdown := GetActiveDropdown()
+		} else if ActiveDropdown != nil {
+			dropdown := ActiveDropdown
 			dropdown.Selected++
 			if dropdown.Selected >= len(dropdown.Options) {
 				dropdown.Selected = len(dropdown.Options) - 1
 			}
 		}
 	} else if ev.Key() == tcell.KeyEscape {
-		dropdowns = make([]*Dropdown, 0)
-		window.textArea.Typing = true
+		ClearDropdowns()
+		window.CursorMode = CursorModeBuffer
 	} else if ev.Key() == tcell.KeyCtrlC { // Close buffer key
 		delete(Buffers, window.textArea.CurrentBuffer.Id)
 		buffersSlice := slices.Collect(maps.Values(Buffers))
@@ -181,8 +190,8 @@ func (window *Window) input(ev *tcell.EventKey) {
 		}
 		window.textArea.CurrentBuffer = buffersSlice[0]
 		window.SetCursorPos(0)
-		dropdowns = make([]*Dropdown, 0)
-		window.textArea.Typing = true
+		ClearDropdowns()
+		window.CursorMode = CursorModeBuffer
 	} else if ev.Key() == tcell.KeyCtrlQ { // Exit key
 		window.Close()
 	} else if ev.Modifiers()&tcell.ModAlt != 0 { // Menu Bar
@@ -202,7 +211,7 @@ func (window *Window) input(ev *tcell.EventKey) {
 			window.textArea.CurrentBuffer.Contents = str
 		}
 	} else if ev.Key() == tcell.KeyTab {
-		if GetActiveDropdown() != nil {
+		if ActiveDropdown != nil {
 			return
 		}
 
@@ -217,8 +226,8 @@ func (window *Window) input(ev *tcell.EventKey) {
 		window.textArea.CursorPos++
 		window.textArea.CurrentBuffer.Contents = str
 	} else if ev.Key() == tcell.KeyEnter {
-		if GetActiveDropdown() != nil {
-			d := GetActiveDropdown()
+		if ActiveDropdown != nil {
+			d := ActiveDropdown
 			d.Action(d.Selected)
 		} else {
 			str := window.textArea.CurrentBuffer.Contents
@@ -233,7 +242,7 @@ func (window *Window) input(ev *tcell.EventKey) {
 			window.textArea.CurrentBuffer.Contents = str
 		}
 	} else if ev.Key() == tcell.KeyRune {
-		if GetActiveDropdown() != nil {
+		if ActiveDropdown != nil {
 			return
 		}
 

@@ -5,7 +5,6 @@ import (
 )
 
 type Dropdown struct {
-	Active     bool
 	Selected   int
 	Options    []string
 	PosX, PosY int
@@ -14,6 +13,7 @@ type Dropdown struct {
 }
 
 var dropdowns = make([]*Dropdown, 0)
+var ActiveDropdown *Dropdown
 
 func CreateDropdownMenu(options []string, posX, posY, dropdownWidth int, action func(int)) *Dropdown {
 	if len(options) == 0 {
@@ -31,7 +31,6 @@ func CreateDropdownMenu(options []string, posX, posY, dropdownWidth int, action 
 	}
 
 	d := &Dropdown{
-		Active:   false,
 		Selected: 0,
 		Options:  options,
 		PosX:     posX,
@@ -45,13 +44,9 @@ func CreateDropdownMenu(options []string, posX, posY, dropdownWidth int, action 
 	return d
 }
 
-func GetActiveDropdown() *Dropdown {
-	for _, dropdown := range dropdowns {
-		if dropdown.Active {
-			return dropdown
-		}
-	}
-	return nil
+func ClearDropdowns() {
+	dropdowns = make([]*Dropdown, 0)
+	ActiveDropdown = nil
 }
 
 func drawDropdowns(window *Window) {

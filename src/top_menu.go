@@ -23,7 +23,7 @@ func initTopMenu() {
 		Name: "File",
 		Key:  'f',
 		Action: func(window *Window) {
-			dropdowns = make([]*Dropdown, 0)
+			ClearDropdowns()
 			d := CreateDropdownMenu([]string{"New", "Save", "Open", "Close", "Quit"}, 0, 1, 0, func(i int) {
 				switch i {
 				case 0:
@@ -50,11 +50,11 @@ func initTopMenu() {
 				case 4:
 					window.Close()
 				}
-				dropdowns = make([]*Dropdown, 0)
-				window.textArea.Typing = true
+				ClearDropdowns()
+				window.CursorMode = CursorModeBuffer
 			})
-			d.Active = true
-			window.textArea.Typing = false
+			ActiveDropdown = d
+			window.CursorMode = CursorModeDropdown
 		},
 	}
 	EditButton := TopMenuButton{
@@ -65,7 +65,7 @@ func initTopMenu() {
 		Name: "Buffers",
 		Key:  'b',
 		Action: func(window *Window) {
-			dropdowns = make([]*Dropdown, 0)
+			ClearDropdowns()
 			buffersSlice := make([]string, 0)
 			for _, buffer := range Buffers {
 				if window.textArea.CurrentBuffer == buffer {
@@ -89,11 +89,11 @@ func initTopMenu() {
 
 				window.textArea.CurrentBuffer = Buffers[id]
 				window.SetCursorPos(0)
-				dropdowns = make([]*Dropdown, 0)
-				window.textArea.Typing = true
+				ClearDropdowns()
+				window.CursorMode = CursorModeBuffer
 			})
-			d.Active = true
-			window.textArea.Typing = false
+			ActiveDropdown = d
+			window.CursorMode = CursorModeDropdown
 		},
 	}
 
