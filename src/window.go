@@ -61,6 +61,9 @@ func CreateWindow() (*Window, error) {
 	// Set screen style
 	screen.SetStyle(tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color234))
 
+	// Enable mouse
+	screen.EnableMouse()
+
 	// Set window screen field
 	window.screen = screen
 
@@ -142,6 +145,8 @@ func (window *Window) Draw() {
 	switch ev := ev.(type) {
 	case *tcell.EventResize:
 		window.screen.Sync()
+	case *tcell.EventMouse:
+		window.mouseInput(ev)
 	case *tcell.EventKey:
 		window.input(ev)
 	}
@@ -259,6 +264,20 @@ func (window *Window) input(ev *tcell.EventKey) {
 	}
 }
 
+func (window *Window) mouseInput(ev *tcell.EventMouse) {
+	mouseX, mouseY := ev.Position()
+	bufferMouseX, bufferMouseY := window.AbsolutePosToBufferArea(mouseX, mouseY)
+
+	// Left click was pressed
+	if ev.Buttons() == tcell.Button1 {
+		// Ensure click was in buffer area
+		x1, y1, x2, y2 := window.GetTextAreaDimensions()
+		if mouseX >= x1 && mouseY >= y1 && mouseX <= x2 && mouseY <= y2 {
+			window.SetCursorPos2D(bufferMouseX, bufferMouseY)
+		}
+	}
+}
+
 func (window *Window) Close() {
 	window.screen.Fini()
 	window.screen = nil
@@ -277,6 +296,15 @@ func (window *Window) GetTextAreaDimensions() (int, int, int, int) {
 	}
 
 	return x1, y1, x2, y2
+}
+
+func (window *Window) AbsolutePosToBufferArea(x, y int) (int, int) {
+	x1, y1, _, _ := window.GetTextAreaDimensions()
+
+	x -= x1
+	y -= y1
+
+	return x, y
 }
 
 func (window *Window) GetAbsoluteCursorPos() (int, int) {
