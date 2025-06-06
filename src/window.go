@@ -319,9 +319,17 @@ func (window *Window) SetCursorPos(position int) {
 }
 
 func (window *Window) SetCursorPos2D(x, y int) {
+	// Ensure x and y are positive
 	x = max(x, 0)
 	y = max(y, 0)
 
+	// Set cursor position to 0 buffer is empty
+	if len(window.textArea.CurrentBuffer.Contents) == 0 {
+		window.SetCursorPos(0)
+		return
+	}
+
+	// Create line slice from buffer contents
 	lines := make([]struct {
 		charIndex int
 		str       string
@@ -330,7 +338,7 @@ func (window *Window) SetCursorPos2D(x, y int) {
 	var str string
 	for i, char := range window.textArea.CurrentBuffer.Contents {
 		str += string(char)
-		if char == '\n' || i == len(window.textArea.CurrentBuffer.Contents) {
+		if char == '\n' || i == len(window.textArea.CurrentBuffer.Contents)-1 {
 			lines = append(lines, struct {
 				charIndex int
 				str       string
@@ -339,14 +347,19 @@ func (window *Window) SetCursorPos2D(x, y int) {
 		}
 	}
 
-	y = min(y, len(lines))
-
-	if y == len(lines) {
-		x = 0
-		window.SetCursorPos(lines[y-1].charIndex + len(lines[y-1].str) + 1)
+	// Append extra character or line
+	if window.textArea.CurrentBuffer.Contents[len(window.textArea.CurrentBuffer.Contents)-1] == '\n' {
+		lines = append(lines, struct {
+			charIndex int
+			str       string
+		}{charIndex: len(window.textArea.CurrentBuffer.Contents), str: " "})
 	} else {
-		x = min(x, len(lines[y].str)-1)
-		window.SetCursorPos(lines[y].charIndex + x)
+		lines[len(lines)-1].str += " "
 	}
 
+	// Limit x and y
+	y = min(y, len(lines)-1)
+	x = min(x, len(lines[y].str)-1)
+
+	window.SetCursorPos(lines[y].charIndex + x)
 }
