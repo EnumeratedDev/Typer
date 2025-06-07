@@ -53,7 +53,7 @@ func initTopMenu() {
 							PrintMessage(window, fmt.Sprintf("File already open! Switching to buffer: %s", openBuffer.Name))
 							window.textArea.CurrentBuffer = openBuffer
 						} else {
-							newBuffer, err := CreateFileBuffer(input)
+							newBuffer, err := CreateFileBuffer(input, false)
 							if err != nil {
 								PrintMessage(window, fmt.Sprintf("Could not open file: %s", err.Error()))
 								return

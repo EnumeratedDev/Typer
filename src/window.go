@@ -46,7 +46,9 @@ func CreateWindow() (*Window, error) {
 	}
 
 	// Create empty buffer if nil
-	window.textArea.CurrentBuffer = CreateBuffer("New File 1")
+	if window.textArea.CurrentBuffer == nil {
+		window.textArea.CurrentBuffer = CreateBuffer("New File 1")
+	}
 
 	// Create tcell screen
 	screen, err := tcell.NewScreen()

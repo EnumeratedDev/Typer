@@ -11,24 +11,19 @@ func main() {
 		log.Fatalf("Failed to create window: %v", err)
 	}
 
-	var initialBuffer *Buffer = nil
-
-	if len(os.Args) > 0 {
+	if len(os.Args) > 1 {
 		for _, file := range os.Args[1:] {
-			b, err := CreateFileBuffer(file)
+			b, err := CreateFileBuffer(file, true)
 			if err != nil {
 				PrintMessage(window, "Could not open file: "+file)
 				continue
 			}
 
-			if initialBuffer == nil {
-				initialBuffer = b
+			if window.textArea.CurrentBuffer.Name == "New File 1" {
+				delete(Buffers, window.textArea.CurrentBuffer.Id)
+				window.textArea.CurrentBuffer = b
 			}
 		}
-	}
-
-	if initialBuffer != nil {
-		window.textArea.CurrentBuffer = initialBuffer
 	}
 
 	for window.screen != nil {

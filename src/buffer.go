@@ -80,7 +80,7 @@ func GetOpenFileBuffer(filename string) *Buffer {
 	return nil
 }
 
-func CreateFileBuffer(filename string) (*Buffer, error) {
+func CreateFileBuffer(filename string, openNonExistentFile bool) (*Buffer, error) {
 	// Replace tilde with home directory
 	if filename != "~" && strings.HasPrefix(filename, "~/") {
 		homedir, err := os.UserHomeDir()
@@ -99,12 +99,14 @@ func CreateFileBuffer(filename string) (*Buffer, error) {
 	}
 
 	stat, err := os.Stat(abs)
-	if err != nil {
-		return nil, err
-	}
+	if !openNonExistentFile {
+		if err != nil {
+			return nil, err
+		}
 
-	if !stat.Mode().IsRegular() {
-		return nil, fmt.Errorf("%s is not a regular file", filename)
+		if !stat.Mode().IsRegular() {
+			return nil, fmt.Errorf("%s is not a regular file", filename)
+		}
 	}
 
 	buffer := Buffer{
@@ -115,9 +117,13 @@ func CreateFileBuffer(filename string) (*Buffer, error) {
 		filename: abs,
 	}
 
-	err = buffer.Load()
-	if err != nil {
-		return nil, err
+	// Load file contents if no error was encountered in stat call
+	if err == nil {
+		err = buffer.Load()
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	Buffers[buffer.Id] = &buffer
