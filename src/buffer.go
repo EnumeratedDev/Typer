@@ -11,12 +11,74 @@ type Buffer struct {
 	Id       int
 	Name     string
 	Contents string
-	LoadFunc func(buffer *Buffer) error
-	SaveFunc func(buffer *Buffer) error
+
+	canSave  bool
+	filename string
 }
 
 var Buffers = make(map[int]*Buffer)
 var LastBufferId int
+
+func (buffer *Buffer) Load() error {
+	// Do not load if canSave is false or filename is not set
+	if !buffer.canSave || buffer.filename == "" {
+		return nil
+	}
+
+	content, err := os.ReadFile(buffer.filename)
+	if err != nil {
+		return err
+	}
+
+	buffer.Contents = string(content)
+	return nil
+}
+
+func (buffer *Buffer) Save() error {
+	// Do not save if canSave is false or filename is not set
+	if !buffer.canSave || buffer.filename == "" {
+		return nil
+	}
+
+	// Append new line character at end of buffer contents if not present
+	if buffer.Contents[len(buffer.Contents)-1] != '\n' {
+		buffer.Contents += "\n"
+	}
+
+	err := os.WriteFile(buffer.filename, []byte(buffer.Contents), 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetOpenFileBuffer(filename string) *Buffer {
+	// Replace tilde with home directory
+	if filename != "~" && strings.HasPrefix(filename, "~/") {
+		homedir, err := os.UserHomeDir()
+
+		if err != nil {
+			return nil
+		}
+
+		filename = filepath.Join(homedir, filename[2:])
+	}
+
+	// Get absolute path of file
+	absFilename, err := filepath.Abs(filename)
+	if err != nil {
+		return nil
+	}
+
+	for _, buffer := range Buffers {
+		if buffer.filename == absFilename {
+			return buffer
+		}
+	}
+
+	return nil
+}
 
 func CreateFileBuffer(filename string) (*Buffer, error) {
 	// Replace tilde with home directory
@@ -30,7 +92,13 @@ func CreateFileBuffer(filename string) (*Buffer, error) {
 		filename = filepath.Join(homedir, filename[2:])
 	}
 
-	stat, err := os.Stat(filename)
+	// Get absolute path of file
+	abs, err := filepath.Abs(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	stat, err := os.Stat(abs)
 	if err != nil {
 		return nil, err
 	}
@@ -43,26 +111,11 @@ func CreateFileBuffer(filename string) (*Buffer, error) {
 		Id:       LastBufferId + 1,
 		Name:     filename,
 		Contents: "",
-		LoadFunc: func(buffer *Buffer) error {
-			content, err := os.ReadFile(filename)
-			if err != nil {
-				return err
-			}
-
-			buffer.Contents = string(content)
-			return nil
-		},
-		SaveFunc: func(buffer *Buffer) error {
-			err := os.WriteFile(filename, []byte(buffer.Contents), 0644)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		},
+		canSave:  true,
+		filename: abs,
 	}
 
-	err = buffer.LoadFunc(&buffer)
+	err = buffer.Load()
 	if err != nil {
 		return nil, err
 	}
@@ -78,8 +131,8 @@ func CreateBuffer(bufferName string) *Buffer {
 		Id:       LastBufferId + 1,
 		Name:     bufferName,
 		Contents: "",
-		LoadFunc: func(buffer *Buffer) error { return nil },
-		SaveFunc: func(buffer *Buffer) error { return nil },
+		canSave:  true,
+		filename: "",
 	}
 
 	Buffers[buffer.Id] = &buffer

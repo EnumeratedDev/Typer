@@ -49,13 +49,19 @@ func initTopMenu() {
 							return
 						}
 
-						buffer, err := CreateFileBuffer(input)
-						if err != nil {
-							PrintMessage(window, fmt.Sprintf("Could not open file: %s", err.Error()))
-							return
+						if openBuffer := GetOpenFileBuffer(input); openBuffer != nil {
+							PrintMessage(window, fmt.Sprintf("File already open! Switching to buffer: %s", openBuffer.Name))
+							window.textArea.CurrentBuffer = openBuffer
+						} else {
+							newBuffer, err := CreateFileBuffer(input)
+							if err != nil {
+								PrintMessage(window, fmt.Sprintf("Could not open file: %s", err.Error()))
+								return
+							}
+
+							PrintMessage(window, fmt.Sprintf("Opening file at: %s", newBuffer.filename))
+							window.textArea.CurrentBuffer = newBuffer
 						}
-						PrintMessage(window, fmt.Sprintf("Opening file: %s", input))
-						window.textArea.CurrentBuffer = buffer
 					}()
 				case 3:
 					delete(Buffers, window.textArea.CurrentBuffer.Id)
