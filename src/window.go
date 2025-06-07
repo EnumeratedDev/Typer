@@ -13,7 +13,7 @@ const (
 	CursorModeDisabled CursorMode = iota
 	CursorModeBuffer
 	CursorModeDropdown
-	CursorModeMessageBar
+	CursorModeInputBar
 )
 
 type Window struct {
@@ -122,6 +122,11 @@ func (window *Window) Draw() {
 		window.drawCurrentBuffer()
 	}
 
+	// Draw input bar
+	if currentInputRequest != nil {
+		drawInputBar(window)
+	}
+
 	// Draw message bar
 	drawMessageBar(window)
 
@@ -131,6 +136,9 @@ func (window *Window) Draw() {
 	// Draw cursor
 	if window.CursorMode == CursorModeBuffer {
 		window.screen.ShowCursor(window.GetAbsoluteCursorPos())
+	} else if window.CursorMode == CursorModeInputBar {
+		_, sizeY := window.screen.Size()
+		window.screen.ShowCursor(len(currentInputRequest.Text)+len(currentInputRequest.input)+1, sizeY-1)
 	} else {
 		window.screen.HideCursor()
 	}
@@ -184,8 +192,14 @@ func (window *Window) input(ev *tcell.EventKey) {
 			}
 		}
 	} else if ev.Key() == tcell.KeyEscape {
-		ClearDropdowns()
-		window.CursorMode = CursorModeBuffer
+		if window.CursorMode == CursorModeInputBar {
+			currentInputRequest.inputChannel <- ""
+			currentInputRequest = nil
+			window.CursorMode = CursorModeBuffer
+		} else {
+			ClearDropdowns()
+			window.CursorMode = CursorModeBuffer
+		}
 	} else if ev.Key() == tcell.KeyCtrlC { // Close buffer key
 		delete(Buffers, window.textArea.CurrentBuffer.Id)
 		buffersSlice := slices.Collect(maps.Values(Buffers))
@@ -207,34 +221,40 @@ func (window *Window) input(ev *tcell.EventKey) {
 			}
 		}
 	} else if ev.Key() == tcell.KeyBackspace2 { // Typing
-		str := window.textArea.CurrentBuffer.Contents
-		index := window.textArea.CursorPos
+		if window.CursorMode == CursorModeBuffer {
+			str := window.textArea.CurrentBuffer.Contents
+			index := window.textArea.CursorPos
 
-		if index != 0 {
-			str = str[:index-1] + str[index:]
-			window.textArea.CursorPos--
-			window.textArea.CurrentBuffer.Contents = str
+			if index != 0 {
+				str = str[:index-1] + str[index:]
+				window.textArea.CursorPos--
+				window.textArea.CurrentBuffer.Contents = str
+			}
+		} else if window.CursorMode == CursorModeInputBar {
+			str := currentInputRequest.input
+			index := currentInputRequest.cursorPos
+
+			if index != 0 {
+				str = str[:index-1] + str[index:]
+				currentInputRequest.cursorPos--
+				currentInputRequest.input = str
+			}
 		}
 	} else if ev.Key() == tcell.KeyTab {
-		if ActiveDropdown != nil {
-			return
-		}
+		if window.CursorMode == CursorModeBuffer {
+			str := window.textArea.CurrentBuffer.Contents
+			index := window.textArea.CursorPos
 
-		str := window.textArea.CurrentBuffer.Contents
-		index := window.textArea.CursorPos
-
-		if index == len(str) {
-			str += "\t"
-		} else {
-			str = str[:index] + "\t" + str[index:]
+			if index == len(str) {
+				str += "\t"
+			} else {
+				str = str[:index] + "\t" + str[index:]
+			}
+			window.textArea.CursorPos++
+			window.textArea.CurrentBuffer.Contents = str
 		}
-		window.textArea.CursorPos++
-		window.textArea.CurrentBuffer.Contents = str
 	} else if ev.Key() == tcell.KeyEnter {
-		if ActiveDropdown != nil {
-			d := ActiveDropdown
-			d.Action(d.Selected)
-		} else {
+		if window.CursorMode == CursorModeBuffer {
 			str := window.textArea.CurrentBuffer.Contents
 			index := window.textArea.CursorPos
 
@@ -245,22 +265,39 @@ func (window *Window) input(ev *tcell.EventKey) {
 			}
 			window.textArea.CursorPos++
 			window.textArea.CurrentBuffer.Contents = str
+		} else if window.CursorMode == CursorModeInputBar {
+			currentInputRequest.inputChannel <- currentInputRequest.input
+			currentInputRequest = nil
+			window.CursorMode = CursorModeBuffer
+		} else if window.CursorMode == CursorModeDropdown {
+			d := ActiveDropdown
+			d.Action(d.Selected)
 		}
 	} else if ev.Key() == tcell.KeyRune {
-		if ActiveDropdown != nil {
-			return
-		}
+		if window.CursorMode == CursorModeBuffer {
+			str := window.textArea.CurrentBuffer.Contents
+			index := window.textArea.CursorPos
 
-		str := window.textArea.CurrentBuffer.Contents
-		index := window.textArea.CursorPos
+			if index == len(str) {
+				str += string(ev.Rune())
+			} else {
+				str = str[:index] + string(ev.Rune()) + str[index:]
+			}
+			window.textArea.CursorPos++
+			window.textArea.CurrentBuffer.Contents = str
+		} else if window.CursorMode == CursorModeInputBar {
+			str := currentInputRequest.input
+			index := currentInputRequest.cursorPos
 
-		if index == len(str) {
-			str += string(ev.Rune())
-		} else {
-			str = str[:index] + string(ev.Rune()) + str[index:]
+			if index == len(str) {
+				str += string(ev.Rune())
+			} else {
+				str = str[:index] + string(ev.Rune()) + str[index:]
+			}
+
+			currentInputRequest.cursorPos++
+			currentInputRequest.input = str
 		}
-		window.textArea.CursorPos++
-		window.textArea.CurrentBuffer.Contents = str
 	}
 }
 

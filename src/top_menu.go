@@ -36,8 +36,27 @@ func initTopMenu() {
 					buffer := CreateBuffer(fmt.Sprintf("New File %d", number))
 					window.textArea.CurrentBuffer = buffer
 					window.SetCursorPos(0)
+					window.CursorMode = CursorModeBuffer
 				case 1:
+					_ = RequestInput(window, "Save buffer to:")
+					PrintMessage(window, "Input requested...")
 				case 2:
+					inputChannel := RequestInput(window, "File to open:")
+					go func() {
+						input := <-inputChannel
+
+						if input == "" {
+							return
+						}
+
+						buffer, err := CreateFileBuffer(input)
+						if err != nil {
+							PrintMessage(window, fmt.Sprintf("Could not open file: %s", err.Error()))
+							return
+						}
+						PrintMessage(window, fmt.Sprintf("Opening file: %s", input))
+						window.textArea.CurrentBuffer = buffer
+					}()
 				case 3:
 					delete(Buffers, window.textArea.CurrentBuffer.Id)
 					buffersSlice := slices.Collect(maps.Values(Buffers))
@@ -47,11 +66,12 @@ func initTopMenu() {
 					}
 					window.textArea.CurrentBuffer = buffersSlice[0]
 					window.SetCursorPos(0)
+					window.CursorMode = CursorModeBuffer
 				case 4:
 					window.Close()
+					window.CursorMode = CursorModeBuffer
 				}
 				ClearDropdowns()
-				window.CursorMode = CursorModeBuffer
 			})
 			ActiveDropdown = d
 			window.CursorMode = CursorModeDropdown

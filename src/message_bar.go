@@ -48,6 +48,11 @@ func drawMessageBar(window *Window) {
 			char = int32(messageToPrint[x])
 		}
 
-		screen.SetContent(x, sizeY-1, char, nil, messageBarStyle)
+		if currentInputRequest == nil {
+			screen.SetContent(x, sizeY-1, char, nil, messageBarStyle)
+		} else {
+			screen.SetContent(x, sizeY-2, char, nil, messageBarStyle)
+		}
+
 	}
 }
