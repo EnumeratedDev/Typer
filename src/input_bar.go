@@ -13,10 +13,10 @@ type TyperInputRequest struct {
 
 var currentInputRequest *TyperInputRequest
 
-func RequestInput(window *Window, text string) chan string {
+func RequestInput(window *Window, text string, defaultInput string) chan string {
 	request := &TyperInputRequest{
 		Text:         text,
-		input:        "",
+		input:        defaultInput,
 		cursorPos:    0,
 		inputChannel: make(chan string),
 	}
@@ -24,6 +24,8 @@ func RequestInput(window *Window, text string) chan string {
 	currentInputRequest = request
 
 	window.CursorMode = CursorModeInputBar
+
+	_ = window.screen.PostEvent(tcell.NewEventInterrupt(nil))
 
 	return request.inputChannel
 }

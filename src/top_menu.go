@@ -38,10 +38,40 @@ func initTopMenu() {
 					window.SetCursorPos(0)
 					window.CursorMode = CursorModeBuffer
 				case 1:
-					_ = RequestInput(window, "Save buffer to:")
-					PrintMessage(window, "Input requested...")
+					if !window.textArea.CurrentBuffer.canSave {
+						PrintMessage(window, "Cannot save this buffer!")
+						return
+					}
+
+					inputChannel := RequestInput(window, "Save file [y\\N]:", "")
+					go func() {
+						input := <-inputChannel
+
+						if strings.ToLower(input) != "y" && strings.ToLower(input) != "yes" {
+							return
+						}
+
+						inputChannel = RequestInput(window, "Save buffer to:", window.textArea.CurrentBuffer.filename)
+
+						input = <-inputChannel
+
+						if strings.TrimSpace(input) == "" {
+							PrintMessage(window, "No save location was given!")
+							return
+						}
+
+						window.textArea.CurrentBuffer.filename = strings.TrimSpace(input)
+						err := window.textArea.CurrentBuffer.Save()
+						if err != nil {
+							PrintMessage(window, fmt.Sprintf("Could not save file: %s", err))
+							window.textArea.CurrentBuffer.filename = ""
+							return
+						}
+
+						PrintMessage(window, "File saved.")
+					}()
 				case 2:
-					inputChannel := RequestInput(window, "File to open:")
+					inputChannel := RequestInput(window, "File to open:", "")
 					go func() {
 						input := <-inputChannel
 
