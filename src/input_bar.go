@@ -41,7 +41,7 @@ func drawInputBar(window *Window) {
 
 	screen := window.screen
 
-	inputBarStyle := tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorWhite)
+	inputBarStyle := tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color236)
 
 	sizeX, sizeY := screen.Size()
 

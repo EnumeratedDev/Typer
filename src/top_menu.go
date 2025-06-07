@@ -160,7 +160,7 @@ func initTopMenu() {
 func drawTopMenu(window *Window) {
 	screen := window.screen
 
-	topMenuStyle := tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorWhite)
+	topMenuStyle := tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color236)
 
 	sizeX, _ := screen.Size()
 
