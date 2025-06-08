@@ -12,9 +12,15 @@ type Buffer struct {
 	Name      string
 	Contents  string
 	CursorPos int
+	Selection *Selection
 
 	canSave  bool
 	filename string
+}
+
+type Selection struct {
+	selectionStart int
+	selectionEnd   int
 }
 
 var Buffers = make(map[int]*Buffer)
@@ -52,6 +58,25 @@ func (buffer *Buffer) Save() error {
 	}
 
 	return nil
+}
+
+func (buffer *Buffer) GetSelectedText() string {
+	if buffer.Selection == nil {
+		return ""
+	}
+
+	if len(buffer.Contents) == 0 {
+		return ""
+	}
+
+	start := buffer.Selection.selectionStart
+	end := buffer.Selection.selectionEnd
+
+	if start <= end {
+		return buffer.Contents[buffer.Selection.selectionStart : buffer.Selection.selectionEnd+1]
+	} else {
+		return buffer.Contents[buffer.Selection.selectionEnd : buffer.Selection.selectionStart+1]
+	}
 }
 
 func GetOpenFileBuffer(filename string) *Buffer {

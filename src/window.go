@@ -26,6 +26,8 @@ type Window struct {
 	screen tcell.Screen
 }
 
+var mouseHeld = false
+
 func CreateWindow() (*Window, error) {
 	window := Window{
 		ShowTopMenu:   true,
@@ -80,7 +82,10 @@ func (window *Window) drawCurrentBuffer() {
 
 	width, _ := window.screen.Size()
 
-	for _, r := range []rune(buffer.Contents) {
+	normalStyle := tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color234)
+	selectedStyle := tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color243)
+
+	for i, r := range []rune(buffer.Contents) {
 		if x >= width || r == '\n' {
 			x = 0
 			if window.ShowLineIndex {
@@ -89,7 +94,13 @@ func (window *Window) drawCurrentBuffer() {
 			y++
 		}
 
-		window.screen.SetContent(x, y, r, nil, tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color234))
+		if buffer.Selection != nil && buffer.Selection.selectionEnd >= buffer.Selection.selectionStart && i >= buffer.Selection.selectionStart && i <= buffer.Selection.selectionEnd {
+			window.screen.SetContent(x, y, r, nil, selectedStyle)
+		} else if buffer.Selection != nil && i <= buffer.Selection.selectionStart && i >= buffer.Selection.selectionEnd {
+			window.screen.SetContent(x, y, r, nil, selectedStyle)
+		} else {
+			window.screen.SetContent(x, y, r, nil, normalStyle)
+		}
 
 		if r != '\n' {
 			x++
@@ -156,17 +167,75 @@ func (window *Window) Draw() {
 
 func (window *Window) input(ev *tcell.EventKey) {
 	if ev.Key() == tcell.KeyRight { // Navigation Keys
+
 		if window.CursorMode == CursorModeBuffer {
+			// Add to selection
+			if ev.Modifiers() == tcell.ModShift {
+				if window.CurrentBuffer.Selection == nil {
+					window.CurrentBuffer.Selection = &Selection{
+						selectionStart: window.CurrentBuffer.CursorPos,
+						selectionEnd:   window.CurrentBuffer.CursorPos,
+					}
+					return
+				} else {
+					window.CurrentBuffer.Selection.selectionEnd = window.CurrentBuffer.CursorPos + 1
+				}
+				// Prevent selecting dummy character at the end of the buffer
+				if window.CurrentBuffer.Selection.selectionEnd >= len(window.CurrentBuffer.Contents) {
+					window.CurrentBuffer.Selection.selectionEnd = len(window.CurrentBuffer.Contents) - 1
+				}
+			} else if window.CurrentBuffer.Selection != nil {
+				// Unset selection
+				window.CurrentBuffer.Selection = nil
+				return
+			}
+			// Move cursor
 			window.SetCursorPos(window.CurrentBuffer.CursorPos + 1)
 		}
 	} else if ev.Key() == tcell.KeyLeft {
 		if window.CursorMode == CursorModeBuffer {
+			// Add to selection
+			if ev.Modifiers() == tcell.ModShift {
+				if window.CurrentBuffer.Selection == nil {
+					window.CurrentBuffer.Selection = &Selection{
+						selectionStart: window.CurrentBuffer.CursorPos,
+						selectionEnd:   window.CurrentBuffer.CursorPos,
+					}
+					return
+				} else {
+					window.CurrentBuffer.Selection.selectionEnd = window.CurrentBuffer.CursorPos - 1
+				}
+			} else if window.CurrentBuffer.Selection != nil {
+				// Unset selection
+				window.CurrentBuffer.Selection = nil
+				return
+			}
+			// Move cursor
 			window.SetCursorPos(window.CurrentBuffer.CursorPos - 1)
 		}
 	} else if ev.Key() == tcell.KeyUp {
+		// Move cursor
+		x, y := window.GetCursorPos2D()
+		window.SetCursorPos2D(x, y-1)
 		if window.CursorMode == CursorModeBuffer {
-			x, y := window.GetCursorPos2D()
-			window.SetCursorPos2D(x, y-1)
+			// Get original cursor position
+			pos := window.CurrentBuffer.CursorPos
+			// Add to selection
+			if ev.Modifiers() == tcell.ModShift {
+				// Add to selection
+				if window.CurrentBuffer.Selection == nil {
+					window.CurrentBuffer.Selection = &Selection{
+						selectionStart: window.CurrentBuffer.CursorPos,
+						selectionEnd:   pos,
+					}
+				} else {
+					window.CurrentBuffer.Selection.selectionEnd = window.CurrentBuffer.CursorPos
+				}
+			} else if window.CurrentBuffer.Selection != nil {
+				// Unset selection
+				window.CurrentBuffer.Selection = nil
+				return
+			}
 		} else if window.CursorMode == CursorModeDropdown {
 			dropdown := ActiveDropdown
 			dropdown.Selected--
@@ -190,8 +259,31 @@ func (window *Window) input(ev *tcell.EventKey) {
 		}
 	} else if ev.Key() == tcell.KeyDown {
 		if window.CursorMode == CursorModeBuffer {
+			// Get original cursor position
+			pos := window.CurrentBuffer.CursorPos
+			// Move cursor
 			x, y := window.GetCursorPos2D()
 			window.SetCursorPos2D(x, y+1)
+			// Add to selection
+			if ev.Modifiers() == tcell.ModShift {
+				// Add to selection
+				if window.CurrentBuffer.Selection == nil {
+					window.CurrentBuffer.Selection = &Selection{
+						selectionStart: pos,
+						selectionEnd:   window.CurrentBuffer.CursorPos,
+					}
+				} else {
+					window.CurrentBuffer.Selection.selectionEnd = window.CurrentBuffer.CursorPos
+				}
+				// Prevent selecting dummy character at the end of the buffer
+				if window.CurrentBuffer.Selection.selectionEnd >= len(window.CurrentBuffer.Contents) {
+					window.CurrentBuffer.Selection.selectionEnd = len(window.CurrentBuffer.Contents) - 1
+				}
+			} else if window.CurrentBuffer.Selection != nil {
+				// Unset selection
+				window.CurrentBuffer.Selection = nil
+				return
+			}
 		} else if window.CursorMode == CursorModeDropdown {
 			dropdown := ActiveDropdown
 			dropdown.Selected++
@@ -337,7 +429,35 @@ func (window *Window) mouseInput(ev *tcell.EventMouse) {
 		// Ensure click was in buffer area
 		x1, y1, x2, y2 := window.GetTextAreaDimensions()
 		if mouseX >= x1 && mouseY >= y1 && mouseX <= x2 && mouseY <= y2 {
+
+			if mouseHeld {
+				// Add to selection
+				if window.CurrentBuffer.Selection == nil {
+					window.CurrentBuffer.Selection = &Selection{
+						selectionStart: window.CurrentBuffer.CursorPos,
+						selectionEnd:   window.CursorPos2DToCursorPos(bufferMouseX, bufferMouseY),
+					}
+					return
+				} else {
+					window.CurrentBuffer.Selection.selectionEnd = window.CursorPos2DToCursorPos(bufferMouseX, bufferMouseY)
+				}
+				// Prevent selecting dummy character at the end of the buffer
+				if window.CurrentBuffer.Selection.selectionEnd >= len(window.CurrentBuffer.Contents) {
+					window.CurrentBuffer.Selection.selectionEnd = len(window.CurrentBuffer.Contents) - 1
+				}
+			} else {
+				// Clear selection
+				if window.CurrentBuffer.Selection != nil {
+					window.CurrentBuffer.Selection = nil
+				}
+			}
+			// Move cursor
 			window.SetCursorPos2D(bufferMouseX, bufferMouseY)
+		}
+		mouseHeld = true
+	} else if ev.Buttons() == tcell.ButtonNone {
+		if mouseHeld {
+			mouseHeld = false
 		}
 	}
 }
@@ -360,6 +480,51 @@ func (window *Window) GetTextAreaDimensions() (int, int, int, int) {
 	}
 
 	return x1, y1, x2, y2
+}
+
+func (window *Window) CursorPos2DToCursorPos(x, y int) int {
+	// Ensure x and y are positive
+	x = max(x, 0)
+	y = max(y, 0)
+
+	// Set cursor position to 0 buffer is empty
+	if len(window.CurrentBuffer.Contents) == 0 {
+		return 0
+	}
+
+	// Create line slice from buffer contents
+	lines := make([]struct {
+		charIndex int
+		str       string
+	}, 0)
+
+	var str string
+	for i, char := range window.CurrentBuffer.Contents {
+		str += string(char)
+		if char == '\n' || i == len(window.CurrentBuffer.Contents)-1 {
+			lines = append(lines, struct {
+				charIndex int
+				str       string
+			}{charIndex: i - len(str) + 1, str: str})
+			str = ""
+		}
+	}
+
+	// Append extra character or line
+	if window.CurrentBuffer.Contents[len(window.CurrentBuffer.Contents)-1] == '\n' {
+		lines = append(lines, struct {
+			charIndex int
+			str       string
+		}{charIndex: len(window.CurrentBuffer.Contents), str: " "})
+	} else {
+		lines[len(lines)-1].str += " "
+	}
+
+	// Limit x and y
+	y = min(y, len(lines)-1)
+	x = min(x, len(lines[y].str)-1)
+
+	return lines[y].charIndex + x
 }
 
 func (window *Window) AbsolutePosToBufferArea(x, y int) (int, int) {
