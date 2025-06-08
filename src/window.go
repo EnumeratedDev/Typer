@@ -175,23 +175,54 @@ func (window *Window) input(ev *tcell.EventKey) {
 		if window.CursorMode == CursorModeBuffer {
 			x, y := window.GetCursorPos2D()
 			window.SetCursorPos2D(x, y-1)
-		} else if ActiveDropdown != nil {
+		} else if window.CursorMode == CursorModeDropdown {
 			dropdown := ActiveDropdown
 			dropdown.Selected--
 			if dropdown.Selected < 0 {
 				dropdown.Selected = 0
 			}
+		} else if window.CursorMode == CursorModeInputBar {
+			if len(inputHistory) == 0 {
+				return
+			}
+
+			current := slices.Index(inputHistory, currentInputRequest.input)
+			if current < 0 {
+				current = len(inputHistory) - 1
+			} else if current != 0 {
+				current--
+			}
+
+			currentInputRequest.input = inputHistory[current]
+			currentInputRequest.cursorPos = len(inputHistory[current])
 		}
 	} else if ev.Key() == tcell.KeyDown {
 		if window.CursorMode == CursorModeBuffer {
 			x, y := window.GetCursorPos2D()
 			window.SetCursorPos2D(x, y+1)
-		} else if ActiveDropdown != nil {
+		} else if window.CursorMode == CursorModeDropdown {
 			dropdown := ActiveDropdown
 			dropdown.Selected++
 			if dropdown.Selected >= len(dropdown.Options) {
 				dropdown.Selected = len(dropdown.Options) - 1
 			}
+		} else if window.CursorMode == CursorModeInputBar {
+			if len(inputHistory) == 0 {
+				return
+			}
+
+			current := slices.Index(inputHistory, currentInputRequest.input)
+			if current < 0 {
+				return
+			} else if current == len(inputHistory)-1 {
+				currentInputRequest.input = ""
+				return
+			} else {
+				current++
+			}
+
+			currentInputRequest.input = inputHistory[current]
+			currentInputRequest.cursorPos = len(inputHistory[current])
 		}
 	} else if ev.Key() == tcell.KeyEscape {
 		if window.CursorMode == CursorModeInputBar {
@@ -268,6 +299,9 @@ func (window *Window) input(ev *tcell.EventKey) {
 			window.textArea.CursorPos++
 			window.textArea.CurrentBuffer.Contents = str
 		} else if window.CursorMode == CursorModeInputBar {
+			if currentInputRequest.input == "" && slices.Index(inputHistory, currentInputRequest.input) == -1 {
+				inputHistory = append(inputHistory, currentInputRequest.input)
+			}
 			currentInputRequest.inputChannel <- currentInputRequest.input
 			currentInputRequest = nil
 			window.CursorMode = CursorModeBuffer

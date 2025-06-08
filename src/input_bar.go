@@ -11,6 +11,7 @@ type TyperInputRequest struct {
 	inputChannel chan string
 }
 
+var inputHistory = make([]string, 0)
 var currentInputRequest *TyperInputRequest
 
 func RequestInput(window *Window, text string, defaultInput string) chan string {
