@@ -8,9 +8,10 @@ import (
 )
 
 type Buffer struct {
-	Id       int
-	Name     string
-	Contents string
+	Id        int
+	Name      string
+	Contents  string
+	CursorPos int
 
 	canSave  bool
 	filename string
@@ -110,11 +111,12 @@ func CreateFileBuffer(filename string, openNonExistentFile bool) (*Buffer, error
 	}
 
 	buffer := Buffer{
-		Id:       LastBufferId + 1,
-		Name:     filename,
-		Contents: "",
-		canSave:  true,
-		filename: abs,
+		Id:        LastBufferId + 1,
+		Name:      filename,
+		Contents:  "",
+		CursorPos: 0,
+		canSave:   true,
+		filename:  abs,
 	}
 
 	// Load file contents if no error was encountered in stat call
@@ -134,11 +136,12 @@ func CreateFileBuffer(filename string, openNonExistentFile bool) (*Buffer, error
 
 func CreateBuffer(bufferName string) *Buffer {
 	buffer := Buffer{
-		Id:       LastBufferId + 1,
-		Name:     bufferName,
-		Contents: "",
-		canSave:  true,
-		filename: "",
+		Id:        LastBufferId + 1,
+		Name:      bufferName,
+		Contents:  "",
+		CursorPos: 0,
+		canSave:   true,
+		filename:  "",
 	}
 
 	Buffers[buffer.Id] = &buffer

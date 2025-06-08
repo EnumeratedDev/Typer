@@ -34,11 +34,10 @@ func initTopMenu() {
 						}
 					}
 					buffer := CreateBuffer(fmt.Sprintf("New File %d", number))
-					window.textArea.CurrentBuffer = buffer
-					window.SetCursorPos(0)
+					window.CurrentBuffer = buffer
 					window.CursorMode = CursorModeBuffer
 				case 1:
-					if !window.textArea.CurrentBuffer.canSave {
+					if !window.CurrentBuffer.canSave {
 						PrintMessage(window, "Cannot save this buffer!")
 						return
 					}
@@ -51,7 +50,7 @@ func initTopMenu() {
 							return
 						}
 
-						inputChannel = RequestInput(window, "Save buffer to:", window.textArea.CurrentBuffer.filename)
+						inputChannel = RequestInput(window, "Save buffer to:", window.CurrentBuffer.filename)
 
 						input = <-inputChannel
 
@@ -60,11 +59,11 @@ func initTopMenu() {
 							return
 						}
 
-						window.textArea.CurrentBuffer.filename = strings.TrimSpace(input)
-						err := window.textArea.CurrentBuffer.Save()
+						window.CurrentBuffer.filename = strings.TrimSpace(input)
+						err := window.CurrentBuffer.Save()
 						if err != nil {
 							PrintMessage(window, fmt.Sprintf("Could not save file: %s", err))
-							window.textArea.CurrentBuffer.filename = ""
+							window.CurrentBuffer.filename = ""
 							return
 						}
 
@@ -81,7 +80,7 @@ func initTopMenu() {
 
 						if openBuffer := GetOpenFileBuffer(input); openBuffer != nil {
 							PrintMessage(window, fmt.Sprintf("File already open! Switching to buffer: %s", openBuffer.Name))
-							window.textArea.CurrentBuffer = openBuffer
+							window.CurrentBuffer = openBuffer
 						} else {
 							newBuffer, err := CreateFileBuffer(input, false)
 							if err != nil {
@@ -90,18 +89,17 @@ func initTopMenu() {
 							}
 
 							PrintMessage(window, fmt.Sprintf("Opening file at: %s", newBuffer.filename))
-							window.textArea.CurrentBuffer = newBuffer
+							window.CurrentBuffer = newBuffer
 						}
 					}()
 				case 3:
-					delete(Buffers, window.textArea.CurrentBuffer.Id)
+					delete(Buffers, window.CurrentBuffer.Id)
 					buffersSlice := slices.Collect(maps.Values(Buffers))
 					if len(buffersSlice) == 0 {
 						window.Close()
 						return
 					}
-					window.textArea.CurrentBuffer = buffersSlice[0]
-					window.SetCursorPos(0)
+					window.CurrentBuffer = buffersSlice[0]
 					window.CursorMode = CursorModeBuffer
 				case 4:
 					window.Close()
@@ -124,7 +122,7 @@ func initTopMenu() {
 			ClearDropdowns()
 			buffersSlice := make([]string, 0)
 			for _, buffer := range Buffers {
-				if window.textArea.CurrentBuffer == buffer {
+				if window.CurrentBuffer == buffer {
 					buffersSlice = append(buffersSlice, fmt.Sprintf("[%d] * %s", buffer.Id, buffer.Name))
 				} else {
 					buffersSlice = append(buffersSlice, fmt.Sprintf("[%d] %s", buffer.Id, buffer.Name))
@@ -143,8 +141,7 @@ func initTopMenu() {
 					return
 				}
 
-				window.textArea.CurrentBuffer = Buffers[id]
-				window.SetCursorPos(0)
+				window.CurrentBuffer = Buffers[id]
 				ClearDropdowns()
 				window.CursorMode = CursorModeBuffer
 			})

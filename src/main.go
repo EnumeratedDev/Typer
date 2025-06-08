@@ -19,9 +19,9 @@ func main() {
 				continue
 			}
 
-			if window.textArea.CurrentBuffer.Name == "New File 1" {
-				delete(Buffers, window.textArea.CurrentBuffer.Id)
-				window.textArea.CurrentBuffer = b
+			if window.CurrentBuffer.Name == "New File 1" {
+				delete(Buffers, window.CurrentBuffer.Id)
+				window.CurrentBuffer = b
 			}
 		}
 	}

@@ -8,7 +8,7 @@ import (
 
 func drawLineIndex(window *Window) {
 	screen := window.screen
-	buffer := window.textArea.CurrentBuffer
+	buffer := window.CurrentBuffer
 
 	lineIndexStyle := tcell.StyleDefault.Foreground(tcell.ColorDimGray).Background(tcell.Color237)
 
