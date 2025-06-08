@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/gdamore/tcell"
 	"log"
-	"maps"
 	"slices"
+	"strings"
 )
 
 type CursorMode uint8
@@ -20,6 +20,8 @@ type Window struct {
 	ShowTopMenu   bool
 	ShowLineIndex bool
 	CursorMode    CursorMode
+
+	Clipboard string
 
 	CurrentBuffer *Buffer
 
@@ -317,16 +319,32 @@ func (window *Window) input(ev *tcell.EventKey) {
 			ClearDropdowns()
 			window.CursorMode = CursorModeBuffer
 		}
-	} else if ev.Key() == tcell.KeyCtrlC { // Close buffer key
-		delete(Buffers, window.CurrentBuffer.Id)
-		buffersSlice := slices.Collect(maps.Values(Buffers))
-		if len(buffersSlice) == 0 {
-			window.Close()
-			return
+	} else if ev.Key() == tcell.KeyCtrlC { // Copy to clipboard key
+		if window.CursorMode == CursorModeBuffer {
+			if window.CurrentBuffer.Selection == nil {
+				// Copy line
+				_, line := window.GetCursorPos2D()
+				window.Clipboard = strings.SplitAfter(window.CurrentBuffer.Contents, "\n")[line]
+				PrintMessage(window, "Copied line to clipboard.")
+			} else {
+				// Copy selection
+				window.Clipboard = window.CurrentBuffer.GetSelectedText()
+				PrintMessage(window, "Copied selection to clipboard.")
+			}
 		}
-		window.CurrentBuffer = buffersSlice[0]
-		ClearDropdowns()
-		window.CursorMode = CursorModeBuffer
+	} else if ev.Key() == tcell.KeyCtrlV { // Paste from clipboard
+		if window.CursorMode == CursorModeBuffer {
+			str := window.CurrentBuffer.Contents
+			index := window.CurrentBuffer.CursorPos
+
+			if index == len(str) {
+				str += window.Clipboard
+			} else {
+				str = str[:index] + window.Clipboard + str[index:]
+			}
+			window.CurrentBuffer.CursorPos += len(window.Clipboard)
+			window.CurrentBuffer.Contents = str
+		}
 	} else if ev.Key() == tcell.KeyCtrlQ { // Exit key
 		window.Close()
 	} else if ev.Modifiers()&tcell.ModAlt != 0 { // Menu Bar

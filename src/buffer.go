@@ -72,10 +72,17 @@ func (buffer *Buffer) GetSelectedText() string {
 	start := buffer.Selection.selectionStart
 	end := buffer.Selection.selectionEnd
 
+	if start >= len(buffer.Contents) {
+		start = len(buffer.Contents) - 1
+	}
+	if end >= len(buffer.Contents) {
+		end = len(buffer.Contents) - 1
+	}
+
 	if start <= end {
-		return buffer.Contents[buffer.Selection.selectionStart : buffer.Selection.selectionEnd+1]
+		return buffer.Contents[start : end+1]
 	} else {
-		return buffer.Contents[buffer.Selection.selectionEnd : buffer.Selection.selectionStart+1]
+		return buffer.Contents[end : start+1]
 	}
 }
 
