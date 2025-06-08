@@ -114,6 +114,39 @@ func initTopMenu() {
 	EditButton := TopMenuButton{
 		Name: "Edit",
 		Key:  'e',
+		Action: func(window *Window) {
+			ClearDropdowns()
+			d := CreateDropdownMenu([]string{"Copy", "Paste"}, 0, 1, 0, func(i int) {
+				switch i {
+				case 0:
+					if window.CurrentBuffer.Selection == nil {
+						// Copy line
+						_, line := window.GetCursorPos2D()
+						window.Clipboard = strings.SplitAfter(window.CurrentBuffer.Contents, "\n")[line]
+						PrintMessage(window, "Copied line to clipboard.")
+					} else {
+						// Copy selection
+						window.Clipboard = window.CurrentBuffer.GetSelectedText()
+						PrintMessage(window, "Copied selection to clipboard.")
+					}
+				case 1:
+					str := window.CurrentBuffer.Contents
+					index := window.CurrentBuffer.CursorPos
+
+					if index == len(str) {
+						str += window.Clipboard
+					} else {
+						str = str[:index] + window.Clipboard + str[index:]
+					}
+					window.CurrentBuffer.CursorPos += len(window.Clipboard)
+					window.CurrentBuffer.Contents = str
+				}
+				ClearDropdowns()
+				window.CursorMode = CursorModeBuffer
+			})
+			ActiveDropdown = d
+			window.CursorMode = CursorModeDropdown
+		},
 	}
 	Buffers := TopMenuButton{
 		Name: "Buffers",
