@@ -108,6 +108,19 @@ func (window *Window) drawCurrentBuffer() {
 			x++
 		}
 	}
+
+	// Draw cursor
+	cursorX, cursorY := window.GetCursorPos2D()
+
+	if window.ShowTopMenu {
+		cursorY++
+	}
+	if window.ShowLineIndex {
+		cursorX += 3
+	}
+
+	r, _, _, _ := window.screen.GetContent(cursorX, cursorY)
+	window.screen.SetContent(cursorX, cursorY, r, nil, selectedStyle)
 }
 
 func (window *Window) Draw() {
@@ -141,9 +154,7 @@ func (window *Window) Draw() {
 	drawDropdowns(window)
 
 	// Draw cursor
-	if window.CursorMode == CursorModeBuffer {
-		window.screen.ShowCursor(window.GetAbsoluteCursorPos())
-	} else if window.CursorMode == CursorModeInputBar {
+	if window.CursorMode == CursorModeInputBar {
 		_, sizeY := window.screen.Size()
 		window.screen.ShowCursor(len(currentInputRequest.Text)+len(currentInputRequest.input)+1, sizeY-1)
 	} else {
