@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gdamore/tcell/v2"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -113,4 +114,12 @@ func drawTopMenu(window *Window) {
 		currentX += len(button.Name) + 1
 	}
 
+	// Draw buffer info
+	filename := "Not set"
+	if filepath.Base(window.CurrentBuffer.filename) != "." {
+		filename = filepath.Base(window.CurrentBuffer.filename)
+	}
+	cursorX, cursorY := window.GetCursorPos2D()
+	cursorInfo := fmt.Sprintf("File: %s Cursor: (%d,%d,%d) Words: %d", filename, cursorX+1, cursorY+1, window.CurrentBuffer.CursorPos+1, len(strings.Fields(window.CurrentBuffer.Contents)))
+	drawText(screen, sizeX-len(cursorInfo)-1, 0, sizeX-1, 0, topMenuStyle, cursorInfo)
 }
