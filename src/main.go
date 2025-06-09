@@ -6,6 +6,12 @@ import (
 )
 
 func main() {
+	// Initialize commands
+	initCommands()
+
+	// Initialize key bindings
+	initKeybindings()
+
 	window, err := CreateWindow()
 	if err != nil {
 		log.Fatalf("Failed to create window: %v", err)

@@ -4,7 +4,6 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"log"
 	"slices"
-	"strings"
 )
 
 type CursorMode uint8
@@ -180,7 +179,6 @@ func (window *Window) Draw() {
 
 func (window *Window) input(ev *tcell.EventKey) {
 	if ev.Key() == tcell.KeyRight { // Navigation Keys
-
 		if window.CursorMode == CursorModeBuffer {
 			// Add to selection
 			if ev.Modifiers() == tcell.ModShift {
@@ -330,42 +328,20 @@ func (window *Window) input(ev *tcell.EventKey) {
 			ClearDropdowns()
 			window.CursorMode = CursorModeBuffer
 		}
-	} else if ev.Key() == tcell.KeyCtrlC { // Copy to clipboard key
-		if window.CursorMode == CursorModeBuffer {
-			if window.CurrentBuffer.Selection == nil {
-				// Copy line
-				_, line := window.GetCursorPos2D()
-				window.Clipboard = strings.SplitAfter(window.CurrentBuffer.Contents, "\n")[line]
-				PrintMessage(window, "Copied line to clipboard.")
-			} else {
-				// Copy selection
-				window.Clipboard = window.CurrentBuffer.GetSelectedText()
-				PrintMessage(window, "Copied selection to clipboard.")
-			}
-		}
-	} else if ev.Key() == tcell.KeyCtrlV { // Paste from clipboard
-		if window.CursorMode == CursorModeBuffer {
-			str := window.CurrentBuffer.Contents
-			index := window.CurrentBuffer.CursorPos
+	}
 
-			if index == len(str) {
-				str += window.Clipboard
-			} else {
-				str = str[:index] + window.Clipboard + str[index:]
-			}
-			window.CurrentBuffer.CursorPos += len(window.Clipboard)
-			window.CurrentBuffer.Contents = str
-		}
-	} else if ev.Key() == tcell.KeyCtrlQ { // Exit key
-		window.Close()
-	} else if ev.Modifiers()&tcell.ModAlt != 0 { // Menu Bar
-		for _, button := range TopMenuButtons {
-			if ev.Rune() == button.Key {
-				button.Action(window)
-				break
+	// Check key bindings
+	if window.CursorMode == CursorModeBuffer {
+		for _, keybinding := range Keybinds {
+			if keybinding.IsPressed(ev) {
+				RunCommand(window, keybinding.command)
+				return
 			}
 		}
-	} else if ev.Key() == tcell.KeyBackspace2 { // Typing
+	}
+
+	// Typing
+	if ev.Key() == tcell.KeyBackspace2 {
 		if window.CursorMode == CursorModeBuffer {
 			str := window.CurrentBuffer.Contents
 			index := window.CurrentBuffer.CursorPos
