@@ -45,8 +45,8 @@ func initCommands() {
 			} else {
 				str = str[:index] + window.Clipboard + str[index:]
 			}
-			window.CurrentBuffer.CursorPos += len(window.Clipboard)
 			window.CurrentBuffer.Contents = str
+			window.SetCursorPos(window.CurrentBuffer.CursorPos + len(window.Clipboard))
 		},
 	}
 

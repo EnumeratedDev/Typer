@@ -8,10 +8,13 @@ import (
 )
 
 type Buffer struct {
-	Id        int
-	Name      string
-	Contents  string
-	CursorPos int
+	Id       int
+	Name     string
+	Contents string
+
+	CursorPos        int
+	OffsetX, OffsetY int
+
 	Selection *Selection
 
 	canSave  bool

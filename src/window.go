@@ -73,50 +73,50 @@ func CreateWindow() (*Window, error) {
 func (window *Window) drawCurrentBuffer() {
 	buffer := window.CurrentBuffer
 
-	x, y := 0, 0
-	if window.ShowTopMenu {
-		y++
-	}
-	if window.ShowLineIndex {
-		x += 3
-	}
+	x, y, _, _ := window.GetTextAreaDimensions()
 
-	width, _ := window.screen.Size()
+	bufferX, bufferY, _, _ := window.GetTextAreaDimensions()
 
 	normalStyle := tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color234)
 	selectedStyle := tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color243)
 
-	for i, r := range []rune(buffer.Contents) {
-		if x >= width || r == '\n' {
+	for i, r := range buffer.Contents {
+		if r == '\n' {
 			x = 0
 			if window.ShowLineIndex {
-				x += 3
+				x += bufferX
 			}
 			y++
 		}
 
-		if buffer.Selection != nil && buffer.Selection.selectionEnd >= buffer.Selection.selectionStart && i >= buffer.Selection.selectionStart && i <= buffer.Selection.selectionEnd {
-			window.screen.SetContent(x, y, r, nil, selectedStyle)
-		} else if buffer.Selection != nil && i <= buffer.Selection.selectionStart && i >= buffer.Selection.selectionEnd {
-			window.screen.SetContent(x, y, r, nil, selectedStyle)
-		} else {
-			window.screen.SetContent(x, y, r, nil, normalStyle)
-		}
-
 		if r != '\n' {
 			x++
+		}
+
+		if x-buffer.OffsetX-1 < bufferX {
+			continue
+		}
+		if y-buffer.OffsetY < bufferY {
+			continue
+		}
+
+		if buffer.Selection != nil && buffer.Selection.selectionEnd >= buffer.Selection.selectionStart && i >= buffer.Selection.selectionStart && i <= buffer.Selection.selectionEnd {
+			window.screen.SetContent(x-buffer.OffsetX-1, y-buffer.OffsetY, r, nil, selectedStyle)
+		} else if buffer.Selection != nil && i <= buffer.Selection.selectionStart && i >= buffer.Selection.selectionEnd {
+			window.screen.SetContent(x-buffer.OffsetX-1, y-buffer.OffsetY, r, nil, selectedStyle)
+		} else {
+			window.screen.SetContent(x-buffer.OffsetX-1, y-buffer.OffsetY, r, nil, normalStyle)
 		}
 	}
 
 	// Draw cursor
 	cursorX, cursorY := window.GetCursorPos2D()
 
-	if window.ShowTopMenu {
-		cursorY++
-	}
-	if window.ShowLineIndex {
-		cursorX += 3
-	}
+	cursorX += bufferX
+	cursorY += bufferY
+
+	cursorX -= window.CurrentBuffer.OffsetX
+	cursorY -= window.CurrentBuffer.OffsetY
 
 	r, _, _, _ := window.screen.GetContent(cursorX, cursorY)
 	window.screen.SetContent(cursorX, cursorY, r, nil, selectedStyle)
@@ -170,6 +170,7 @@ func (window *Window) Draw() {
 	switch ev := ev.(type) {
 	case *tcell.EventResize:
 		window.screen.Sync()
+		window.SyncBufferOffset()
 	case *tcell.EventMouse:
 		window.mouseInput(ev)
 	case *tcell.EventKey:
@@ -348,8 +349,8 @@ func (window *Window) input(ev *tcell.EventKey) {
 
 			if index != 0 {
 				str = str[:index-1] + str[index:]
-				window.CurrentBuffer.CursorPos--
 				window.CurrentBuffer.Contents = str
+				window.SetCursorPos(window.CurrentBuffer.CursorPos - 1)
 			}
 		} else if window.CursorMode == CursorModeInputBar {
 			str := currentInputRequest.input
@@ -371,8 +372,8 @@ func (window *Window) input(ev *tcell.EventKey) {
 			} else {
 				str = str[:index] + "\t" + str[index:]
 			}
-			window.CurrentBuffer.CursorPos++
 			window.CurrentBuffer.Contents = str
+			window.SetCursorPos(window.CurrentBuffer.CursorPos + 1)
 		}
 	} else if ev.Key() == tcell.KeyEnter {
 		if window.CursorMode == CursorModeBuffer {
@@ -384,8 +385,8 @@ func (window *Window) input(ev *tcell.EventKey) {
 			} else {
 				str = str[:index] + "\n" + str[index:]
 			}
-			window.CurrentBuffer.CursorPos++
 			window.CurrentBuffer.Contents = str
+			window.SetCursorPos(window.CurrentBuffer.CursorPos + 1)
 		} else if window.CursorMode == CursorModeInputBar {
 			if currentInputRequest.input == "" && slices.Index(inputHistory, currentInputRequest.input) == -1 {
 				inputHistory = append(inputHistory, currentInputRequest.input)
@@ -407,8 +408,8 @@ func (window *Window) input(ev *tcell.EventKey) {
 			} else {
 				str = str[:index] + string(ev.Rune()) + str[index:]
 			}
-			window.CurrentBuffer.CursorPos++
 			window.CurrentBuffer.Contents = str
+			window.SetCursorPos(window.CurrentBuffer.CursorPos + 1)
 		} else if window.CursorMode == CursorModeInputBar {
 			str := currentInputRequest.input
 			index := currentInputRequest.cursorPos
@@ -440,11 +441,11 @@ func (window *Window) mouseInput(ev *tcell.EventMouse) {
 				if window.CurrentBuffer.Selection == nil {
 					window.CurrentBuffer.Selection = &Selection{
 						selectionStart: window.CurrentBuffer.CursorPos,
-						selectionEnd:   window.CursorPos2DToCursorPos(bufferMouseX, bufferMouseY),
+						selectionEnd:   window.CursorPos2DToCursorPos(bufferMouseX+window.CurrentBuffer.OffsetX, bufferMouseY+window.CurrentBuffer.OffsetY),
 					}
 					return
 				} else {
-					window.CurrentBuffer.Selection.selectionEnd = window.CursorPos2DToCursorPos(bufferMouseX, bufferMouseY)
+					window.CurrentBuffer.Selection.selectionEnd = window.CursorPos2DToCursorPos(bufferMouseX+window.CurrentBuffer.OffsetX, bufferMouseY+window.CurrentBuffer.OffsetY)
 				}
 				// Prevent selecting dummy character at the end of the buffer
 				if window.CurrentBuffer.Selection.selectionEnd >= len(window.CurrentBuffer.Contents) {
@@ -457,7 +458,7 @@ func (window *Window) mouseInput(ev *tcell.EventMouse) {
 				}
 			}
 			// Move cursor
-			window.SetCursorPos2D(bufferMouseX, bufferMouseY)
+			window.SetCursorPos2D(bufferMouseX+window.CurrentBuffer.OffsetX, bufferMouseY+window.CurrentBuffer.OffsetY)
 		}
 		mouseHeld = true
 	} else if ev.Buttons() == tcell.ButtonNone {
@@ -481,10 +482,10 @@ func (window *Window) GetTextAreaDimensions() (int, int, int, int) {
 	}
 
 	if window.ShowLineIndex {
-		x1 += 3
+		x1 += getLineIndexSize(window)
 	}
 
-	return x1, y1, x2, y2
+	return x1, y1, x2 - 1, y2 - 2
 }
 
 func (window *Window) CursorPos2DToCursorPos(x, y int) int {
@@ -578,6 +579,8 @@ func (window *Window) SetCursorPos(position int) {
 	if window.CurrentBuffer.CursorPos > len(window.CurrentBuffer.Contents) {
 		window.CurrentBuffer.CursorPos = len(window.CurrentBuffer.Contents)
 	}
+
+	window.SyncBufferOffset()
 }
 
 func (window *Window) SetCursorPos2D(x, y int) {
@@ -624,4 +627,21 @@ func (window *Window) SetCursorPos2D(x, y int) {
 	x = min(x, len(lines[y].str)-1)
 
 	window.SetCursorPos(lines[y].charIndex + x)
+}
+
+func (window *Window) SyncBufferOffset() {
+	x, y := window.GetCursorPos2D()
+	bufferX1, bufferY1, bufferX2, bufferY2 := window.GetTextAreaDimensions()
+
+	if y < window.CurrentBuffer.OffsetY {
+		window.CurrentBuffer.OffsetY = y
+	} else if y > window.CurrentBuffer.OffsetY+(bufferY2-bufferY1) {
+		window.CurrentBuffer.OffsetY = y - (bufferY2 - bufferY1)
+	}
+
+	if x < window.CurrentBuffer.OffsetX {
+		window.CurrentBuffer.OffsetX = x
+	} else if x > window.CurrentBuffer.OffsetX+(bufferX2-bufferX1) {
+		window.CurrentBuffer.OffsetX = x - (bufferX2 - bufferX1)
+	}
 }

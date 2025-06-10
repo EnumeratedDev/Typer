@@ -10,7 +10,7 @@ func drawLineIndex(window *Window) {
 	screen := window.screen
 	buffer := window.CurrentBuffer
 
-	lineIndexStyle := tcell.StyleDefault.Foreground(tcell.ColorDimGray).Background(tcell.Color237)
+	lineIndexStyle := tcell.StyleDefault.Foreground(tcell.ColorDimGray).Background(tcell.Color235)
 
 	_, sizeY := screen.Size()
 
@@ -19,8 +19,37 @@ func drawLineIndex(window *Window) {
 		y = 1
 	}
 
-	for lineIndex := 1; lineIndex <= strings.Count(buffer.Contents, "\n")+1 && lineIndex < sizeY; lineIndex++ {
-		drawText(screen, 0, y, 3, y, lineIndexStyle, strconv.Itoa(lineIndex)+". ")
+	lineIndexSize := getLineIndexSize(window)
+
+	for lineIndex := 1 + buffer.OffsetY; lineIndex <= strings.Count(buffer.Contents, "\n")+1 && lineIndex < sizeY+buffer.OffsetY; lineIndex++ {
+
+		for x := 0; x < lineIndexSize; x++ {
+			screen.SetContent(x, y, ' ', nil, lineIndexStyle)
+		}
+
+		text := strconv.Itoa(lineIndex)
+
+		drawText(screen, lineIndexSize-len(text)-1, y, lineIndexSize, y, lineIndexStyle, text)
 		y++
 	}
+}
+
+func getLineIndexSize(window *Window) int {
+	i := strings.Count(window.CurrentBuffer.Contents, "\n") + 1
+	if i == 0 {
+		return 4
+	}
+	count := 0
+	for i != 0 {
+		i /= 10
+		count++
+	}
+
+	if count < 3 {
+		count = 4
+	} else {
+		count += 1
+	}
+
+	return count
 }
