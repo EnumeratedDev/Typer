@@ -226,12 +226,12 @@ func (window *Window) input(ev *tcell.EventKey) {
 			window.SetCursorPos(window.CurrentBuffer.CursorPos - 1)
 		}
 	} else if ev.Key() == tcell.KeyUp {
-		// Move cursor
-		x, y := window.GetCursorPos2D()
-		window.SetCursorPos2D(x, y-1)
 		if window.CursorMode == CursorModeBuffer {
 			// Get original cursor position
 			pos := window.CurrentBuffer.CursorPos
+			// Move cursor
+			x, y := window.GetCursorPos2D()
+			window.SetCursorPos2D(x, y-1)
 			// Add to selection
 			if ev.Modifiers() == tcell.ModShift {
 				// Add to selection
