@@ -6,8 +6,9 @@ import (
 )
 
 type Keybinding struct {
-	keybind string
-	command string
+	keybind     string
+	cursorModes []CursorMode
+	command     string
 }
 
 var Keybinds = make([]Keybinding, 0)
@@ -15,60 +16,74 @@ var Keybinds = make([]Keybinding, 0)
 func initKeybindings() {
 	// Add key bindings
 	Keybinds = append(Keybinds, Keybinding{
-		keybind: "Ctrl-Q",
-		command: "quit",
+		keybind:     "Ctrl-Q",
+		cursorModes: []CursorMode{CursorModeBuffer},
+		command:     "quit",
 	})
 	Keybinds = append(Keybinds, Keybinding{
-		keybind: "Ctrl-C",
-		command: "copy",
+		keybind:     "Ctrl-C",
+		cursorModes: []CursorMode{CursorModeBuffer},
+		command:     "copy",
 	})
 	Keybinds = append(Keybinds, Keybinding{
-		keybind: "Ctrl-V",
-		command: "paste",
+		keybind:     "Ctrl-V",
+		cursorModes: []CursorMode{CursorModeBuffer},
+		command:     "paste",
 	})
 	Keybinds = append(Keybinds, Keybinding{
-		keybind: "Ctrl-S",
-		command: "save",
+		keybind:     "Ctrl-S",
+		cursorModes: []CursorMode{CursorModeBuffer},
+		command:     "save",
 	})
 	Keybinds = append(Keybinds, Keybinding{
-		keybind: "Ctrl-O",
-		command: "open",
+		keybind:     "Ctrl-O",
+		cursorModes: []CursorMode{CursorModeBuffer},
+		command:     "open",
 	})
 	Keybinds = append(Keybinds, Keybinding{
-		keybind: "Ctrl-R",
-		command: "reload",
+		keybind:     "Ctrl-R",
+		cursorModes: []CursorMode{CursorModeBuffer},
+		command:     "reload",
 	})
 	Keybinds = append(Keybinds, Keybinding{
-		keybind: "PgUp",
-		command: "prev-buffer",
+		keybind:     "PgUp",
+		cursorModes: []CursorMode{CursorModeBuffer},
+		command:     "prev-buffer",
 	})
 	Keybinds = append(Keybinds, Keybinding{
-		keybind: "PgDn",
-		command: "next-buffer",
+		keybind:     "PgDn",
+		cursorModes: []CursorMode{CursorModeBuffer},
+		command:     "next-buffer",
 	})
 	Keybinds = append(Keybinds, Keybinding{
-		keybind: "Ctrl-N",
-		command: "new-buffer",
+		keybind:     "Ctrl-N",
+		cursorModes: []CursorMode{CursorModeBuffer},
+		command:     "new-buffer",
 	})
 	Keybinds = append(Keybinds, Keybinding{
-		keybind: "Delete",
-		command: "close-buffer",
+		keybind:     "Delete",
+		cursorModes: []CursorMode{CursorModeBuffer},
+		command:     "close-buffer",
 	})
 	Keybinds = append(Keybinds, Keybinding{
-		keybind: "Ctrl-Q",
-		command: "quit",
+		keybind:     "Ctrl-Q",
+		cursorModes: []CursorMode{CursorModeBuffer},
+		command:     "quit",
 	})
 	Keybinds = append(Keybinds, Keybinding{
-		keybind: "F1",
-		command: "menu-file",
+		keybind:     "F1",
+		cursorModes: []CursorMode{CursorModeBuffer, CursorModeDropdown},
+		command:     "menu-file",
 	})
 	Keybinds = append(Keybinds, Keybinding{
-		keybind: "F2",
-		command: "menu-edit",
+		keybind:     "F2",
+		cursorModes: []CursorMode{CursorModeBuffer, CursorModeDropdown},
+		command:     "menu-edit",
 	})
 	Keybinds = append(Keybinds, Keybinding{
-		keybind: "F3",
-		command: "menu-buffers",
+		keybind:     "F3",
+		cursorModes: []CursorMode{CursorModeBuffer, CursorModeDropdown},
+		command:     "menu-buffers",
 	})
 }
 

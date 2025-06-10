@@ -332,12 +332,10 @@ func (window *Window) input(ev *tcell.EventKey) {
 	}
 
 	// Check key bindings
-	if window.CursorMode == CursorModeBuffer {
-		for _, keybinding := range Keybinds {
-			if keybinding.IsPressed(ev) {
-				RunCommand(window, keybinding.command)
-				return
-			}
+	for _, keybinding := range Keybinds {
+		if keybinding.IsPressed(ev) && slices.Index(keybinding.cursorModes, window.CursorMode) != -1 {
+			RunCommand(window, keybinding.command)
+			return
 		}
 	}
 
