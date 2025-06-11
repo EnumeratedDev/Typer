@@ -4,6 +4,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"log"
 	"slices"
+	"strings"
 )
 
 type CursorMode uint8
@@ -77,49 +78,52 @@ func (window *Window) drawCurrentBuffer() {
 
 	bufferX, bufferY, _, _ := window.GetTextAreaDimensions()
 
-	normalStyle := tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color234)
-	selectedStyle := tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color243)
+	for i, r := range buffer.Contents + " " {
+		if x-buffer.OffsetX >= bufferX && y-buffer.OffsetY >= bufferY {
+			// Default style
+			style := tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color234)
 
-	for i, r := range buffer.Contents {
-		if r == '\n' {
-			x = 0
-			if window.ShowLineIndex {
-				x += bufferX
+			// Change background if under cursor
+			if i == buffer.CursorPos {
+				style = style.Background(tcell.Color243)
 			}
-			y++
+
+			// Change background if selected
+			if buffer.Selection != nil {
+				if buffer.Selection.selectionEnd >= buffer.Selection.selectionStart && i >= buffer.Selection.selectionStart && i <= buffer.Selection.selectionEnd {
+					style = style.Background(tcell.Color243)
+
+					// Show selection on entire tab space
+					if r == '\t' {
+						for j := 0; j < 4; j++ {
+							window.screen.SetContent(x+j-buffer.OffsetX, y-buffer.OffsetY, r, nil, style)
+						}
+					}
+				} else if i <= buffer.Selection.selectionStart && i >= buffer.Selection.selectionEnd {
+					style = style.Background(tcell.Color243)
+
+					// Show selection on entire tab space
+					if r == '\t' {
+						for j := 0; j < 4; j++ {
+							window.screen.SetContent(x+j-buffer.OffsetX, y-buffer.OffsetY, r, nil, style)
+						}
+					}
+				}
+			}
+
+			window.screen.SetContent(x-buffer.OffsetX, y-buffer.OffsetY, r, nil, style)
 		}
 
-		if r != '\n' {
+		// Change position for next character
+		if r == '\n' {
+			x = bufferX
+			y++
+		} else if r == '\t' {
+			x += 4
+		} else {
 			x++
 		}
-
-		if x-buffer.OffsetX-1 < bufferX {
-			continue
-		}
-		if y-buffer.OffsetY < bufferY {
-			continue
-		}
-
-		if buffer.Selection != nil && buffer.Selection.selectionEnd >= buffer.Selection.selectionStart && i >= buffer.Selection.selectionStart && i <= buffer.Selection.selectionEnd {
-			window.screen.SetContent(x-buffer.OffsetX-1, y-buffer.OffsetY, r, nil, selectedStyle)
-		} else if buffer.Selection != nil && i <= buffer.Selection.selectionStart && i >= buffer.Selection.selectionEnd {
-			window.screen.SetContent(x-buffer.OffsetX-1, y-buffer.OffsetY, r, nil, selectedStyle)
-		} else {
-			window.screen.SetContent(x-buffer.OffsetX-1, y-buffer.OffsetY, r, nil, normalStyle)
-		}
 	}
-
-	// Draw cursor
-	cursorX, cursorY := window.GetCursorPos2D()
-
-	cursorX += bufferX
-	cursorY += bufferY
-
-	cursorX -= window.CurrentBuffer.OffsetX
-	cursorY -= window.CurrentBuffer.OffsetY
-
-	r, _, _, _ := window.screen.GetContent(cursorX, cursorY)
-	window.screen.SetContent(cursorX, cursorY, r, nil, selectedStyle)
 }
 
 func (window *Window) Draw() {
@@ -426,24 +430,23 @@ func (window *Window) input(ev *tcell.EventKey) {
 
 func (window *Window) mouseInput(ev *tcell.EventMouse) {
 	mouseX, mouseY := ev.Position()
-	bufferMouseX, bufferMouseY := window.AbsolutePosToBufferArea(mouseX, mouseY)
 
 	// Left click was pressed
 	if ev.Buttons() == tcell.Button1 {
 		// Ensure click was in buffer area
 		x1, y1, x2, y2 := window.GetTextAreaDimensions()
 		if mouseX >= x1 && mouseY >= y1 && mouseX <= x2 && mouseY <= y2 {
-
+			bufferMouseX, bufferMouseY := window.AbsolutePosToCursorPos2D(mouseX, mouseY)
 			if mouseHeld {
 				// Add to selection
 				if window.CurrentBuffer.Selection == nil {
 					window.CurrentBuffer.Selection = &Selection{
 						selectionStart: window.CurrentBuffer.CursorPos,
-						selectionEnd:   window.CursorPos2DToCursorPos(bufferMouseX+window.CurrentBuffer.OffsetX, bufferMouseY+window.CurrentBuffer.OffsetY),
+						selectionEnd:   window.CursorPos2DToCursorPos(bufferMouseX, bufferMouseY),
 					}
 					return
 				} else {
-					window.CurrentBuffer.Selection.selectionEnd = window.CursorPos2DToCursorPos(bufferMouseX+window.CurrentBuffer.OffsetX, bufferMouseY+window.CurrentBuffer.OffsetY)
+					window.CurrentBuffer.Selection.selectionEnd = window.CursorPos2DToCursorPos(bufferMouseX, bufferMouseY)
 				}
 				// Prevent selecting dummy character at the end of the buffer
 				if window.CurrentBuffer.Selection.selectionEnd >= len(window.CurrentBuffer.Contents) {
@@ -456,7 +459,7 @@ func (window *Window) mouseInput(ev *tcell.EventMouse) {
 				}
 			}
 			// Move cursor
-			window.SetCursorPos2D(bufferMouseX+window.CurrentBuffer.OffsetX, bufferMouseY+window.CurrentBuffer.OffsetY)
+			window.SetCursorPos2D(bufferMouseX, bufferMouseY)
 		}
 		mouseHeld = true
 	} else if ev.Buttons() == tcell.ButtonNone {
@@ -531,11 +534,47 @@ func (window *Window) CursorPos2DToCursorPos(x, y int) int {
 	return lines[y].charIndex + x
 }
 
-func (window *Window) AbsolutePosToBufferArea(x, y int) (int, int) {
+func (window *Window) AbsolutePosToCursorPos2D(x, y int) (int, int) {
 	x1, y1, _, _ := window.GetTextAreaDimensions()
 
 	x -= x1
 	y -= y1
+
+	x += window.CurrentBuffer.OffsetX
+	y += window.CurrentBuffer.OffsetY
+
+	if x < 0 {
+		x = 0
+	}
+	if y < 0 {
+		y = 0
+	}
+
+	split := strings.SplitAfter(window.CurrentBuffer.Contents+" ", "\n")
+
+	if y >= len(split) {
+		y = len(split) - 1
+	}
+	line := split[y]
+
+	posInLine := make([]int, 0)
+	for i, char := range []rune(line) {
+		if char == '\t' {
+			for j := 0; j < 4; j++ {
+				posInLine = append(posInLine, i)
+			}
+		} else {
+			posInLine = append(posInLine, i)
+		}
+	}
+
+	if len(posInLine) == 0 {
+		x = 0
+	} else if x >= len(posInLine) {
+		x = posInLine[len(posInLine)-1]
+	} else {
+		x = posInLine[x]
+	}
 
 	return x, y
 }
