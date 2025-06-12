@@ -22,7 +22,13 @@ func initTopMenu() {
 		Name: "File",
 		Action: func(window *Window) {
 			ClearDropdowns()
-			d := CreateDropdownMenu([]string{"New", "Save", "Open", "Close", "Quit"}, 0, 1, 0, func(i int) {
+
+			y := 0
+			if window.ShowTopMenu {
+				y++
+			}
+
+			d := CreateDropdownMenu([]string{"New", "Save", "Open", "Close", "Quit"}, 0, y, 0, func(i int) {
 				switch i {
 				case 0:
 					RunCommand(window, "new-buffer")
@@ -45,7 +51,13 @@ func initTopMenu() {
 		Name: "Edit",
 		Action: func(window *Window) {
 			ClearDropdowns()
-			d := CreateDropdownMenu([]string{"Copy", "Paste"}, 0, 1, 0, func(i int) {
+
+			y := 0
+			if window.ShowTopMenu {
+				y++
+			}
+
+			d := CreateDropdownMenu([]string{"Copy", "Paste"}, 0, y, 0, func(i int) {
 				switch i {
 				case 0:
 					RunCommand(window, "copy")
@@ -63,6 +75,12 @@ func initTopMenu() {
 		Name: "Buffers",
 		Action: func(window *Window) {
 			ClearDropdowns()
+
+			y := 0
+			if window.ShowTopMenu {
+				y++
+			}
+
 			buffersSlice := make([]string, 0)
 			for _, buffer := range Buffers {
 				if window.CurrentBuffer == buffer {
@@ -74,7 +92,7 @@ func initTopMenu() {
 
 			slices.Sort(buffersSlice)
 
-			d := CreateDropdownMenu(buffersSlice, 0, 1, 0, func(i int) {
+			d := CreateDropdownMenu(buffersSlice, 0, y, 0, func(i int) {
 				start := strings.Index(buffersSlice[i], "[")
 				end := strings.Index(buffersSlice[i], "]")
 

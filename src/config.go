@@ -10,6 +10,8 @@ import (
 type TyperConfig struct {
 	SelectedStyle  string `yaml:"selected_style,omitempty"`
 	FallbackStyle  string `yaml:"fallback_style,omitempty"`
+	ShowTopMenu    bool   `yaml:"show_top_menu,omitempty"`
+	ShowLineIndex  bool   `yaml:"show_line_index,omitempty"`
 	TabIndentation int    `yaml:"tab_indentation,omitempty"`
 }
 
@@ -19,6 +21,8 @@ func readConfig() {
 	Config = TyperConfig{
 		SelectedStyle:  "default",
 		FallbackStyle:  "default-fallback",
+		ShowTopMenu:    true,
+		ShowLineIndex:  true,
 		TabIndentation: 4,
 	}
 

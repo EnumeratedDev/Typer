@@ -39,8 +39,8 @@ var mouseHeld = false
 
 func CreateWindow() (*Window, error) {
 	window := Window{
-		ShowTopMenu:   true,
-		ShowLineIndex: true,
+		ShowTopMenu:   Config.ShowTopMenu,
+		ShowLineIndex: Config.ShowLineIndex,
 		CursorMode:    CursorModeBuffer,
 
 		CurrentBuffer: nil,
