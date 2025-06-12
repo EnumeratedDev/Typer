@@ -31,10 +31,6 @@ func RequestInput(window *Window, text string, defaultInput string) chan string 
 	return request.inputChannel
 }
 
-func IsRequestingInput() bool {
-	return currentInputRequest != nil
-}
-
 func drawInputBar(window *Window) {
 	if currentInputRequest == nil {
 		return
