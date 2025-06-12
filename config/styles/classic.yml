@@ -1,0 +1,21 @@
+# Metadata
+name: "classic"
+description: "Style imitating the look of classic text editors and IDEs from the and 90s"
+style_type: "256-color"
+
+# Colors
+colors:
+  buffer_area_bg: "darkblue" # Buffer area background color
+  buffer_area_fg: "white" # Buffer area text color
+  buffer_area_sel: "blue" # Buffer area selected text and cursor background color
+  top_menu_bg: "245" # Top menu background color
+  top_menu_fg: "black" # Top menu text color
+  dropdown_bg: "lightgray" # Dropdown background color
+  dropdown_fg: "black" # Dropdown text color
+  dropdown_sel: "blue" # Dropdown selected option background color
+  line_index_bg: "247" # Line index background color
+  line_index_fg: "black" # Line index text color
+  message_bar_bg: "245" # Message bar background color
+  message_bar_fg: "black" # Message bar text color
+  input_bar_bg: "245" # Input bar background color
+  input_bar_fg: "black" # Input bar text color

@@ -50,13 +50,13 @@ func ClearDropdowns() {
 }
 
 func drawDropdowns(window *Window) {
-	dropdownStyle := tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color236)
+	dropdownStyle := tcell.StyleDefault.Background(CurrentStyle.DropdownBg).Foreground(CurrentStyle.DropdownFg)
 	for _, d := range dropdowns {
 		drawBox(window.screen, d.PosX, d.PosY, d.PosX+d.Width+1, d.PosY+len(d.Options)+1, dropdownStyle)
 		line := d.PosY
 		for i, option := range d.Options {
 			if d.Selected == i {
-				drawText(window.screen, d.PosX+1, d.PosY+line, d.PosX+d.Width+1, d.PosY+line, dropdownStyle.Background(tcell.Color240), option)
+				drawText(window.screen, d.PosX+1, d.PosY+line, d.PosX+d.Width+1, d.PosY+line, dropdownStyle.Background(CurrentStyle.DropdownSel), option)
 			} else {
 				drawText(window.screen, d.PosX+1, d.PosY+line, d.PosX+d.Width+1, d.PosY+line, dropdownStyle, option)
 			}

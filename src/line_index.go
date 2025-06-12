@@ -10,7 +10,7 @@ func drawLineIndex(window *Window) {
 	screen := window.screen
 	buffer := window.CurrentBuffer
 
-	lineIndexStyle := tcell.StyleDefault.Foreground(tcell.ColorDimGray).Background(tcell.Color235)
+	lineIndexStyle := tcell.StyleDefault.Background(CurrentStyle.LineIndexBg).Foreground(CurrentStyle.LineIndexFg)
 
 	_, sizeY := screen.Size()
 

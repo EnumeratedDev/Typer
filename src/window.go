@@ -16,6 +16,13 @@ const (
 	CursorModeInputBar
 )
 
+var CursorModeNames = map[CursorMode]string{
+	CursorModeDisabled: "disabled",
+	CursorModeBuffer:   "buffer",
+	CursorModeDropdown: "dropdown",
+	CursorModeInputBar: "input_bar",
+}
+
 type Window struct {
 	ShowTopMenu   bool
 	ShowLineIndex bool
@@ -57,7 +64,8 @@ func CreateWindow() (*Window, error) {
 	}
 
 	// Set screen style
-	screen.SetStyle(tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color234))
+	SetCurrentStyle(screen)
+	screen.SetStyle(tcell.StyleDefault.Foreground(CurrentStyle.BufferAreaFg).Background(CurrentStyle.BufferAreaBg))
 
 	// Enable mouse
 	screen.EnableMouse()
@@ -81,21 +89,21 @@ func (window *Window) drawCurrentBuffer() {
 	for i, r := range buffer.Contents + " " {
 		if x-buffer.OffsetX >= bufferX && y-buffer.OffsetY >= bufferY {
 			// Default style
-			style := tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color234)
+			style := tcell.StyleDefault.Background(CurrentStyle.BufferAreaBg).Foreground(CurrentStyle.BufferAreaFg)
 
 			// Change background if under cursor
 			if i == buffer.CursorPos {
-				style = style.Background(tcell.Color243)
+				style = style.Background(CurrentStyle.BufferAreaSel)
 			}
 
 			// Change background if selected
 			if buffer.Selection != nil {
 				if edge1, edge2 := buffer.GetSelectionEdges(); i >= edge1 && i <= edge2 {
-					style = style.Background(tcell.Color243)
+					style = style.Background(CurrentStyle.BufferAreaSel)
 
 					// Show selection on entire tab space
 					if r == '\t' {
-						for j := 0; j < 4; j++ {
+						for j := 0; j < int(Config.TabIndentation); j++ {
 							window.screen.SetContent(x+j-buffer.OffsetX, y-buffer.OffsetY, r, nil, style)
 						}
 					}
@@ -110,7 +118,7 @@ func (window *Window) drawCurrentBuffer() {
 			x = bufferX
 			y++
 		} else if r == '\t' {
-			x += 4
+			x += int(Config.TabIndentation)
 		} else {
 			x++
 		}
@@ -327,9 +335,9 @@ func (window *Window) input(ev *tcell.EventKey) {
 	}
 
 	// Check key bindings
-	for _, keybinding := range Keybinds {
-		if keybinding.IsPressed(ev) && slices.Index(keybinding.cursorModes, window.CursorMode) != -1 {
-			RunCommand(window, keybinding.command)
+	for _, keybinding := range Keybindings.Keybindings {
+		if keybinding.IsPressed(ev) && slices.Index(keybinding.GetCursorModes(), window.CursorMode) != -1 {
+			RunCommand(window, keybinding.Command)
 			return
 		}
 	}
@@ -603,7 +611,7 @@ func (window *Window) AbsolutePosToCursorPos2D(x, y int) (int, int) {
 	posInLine := make([]int, 0)
 	for i, char := range []rune(line) {
 		if char == '\t' {
-			for j := 0; j < 4; j++ {
+			for j := 0; j < Config.TabIndentation; j++ {
 				posInLine = append(posInLine, i)
 			}
 		} else {

@@ -33,7 +33,7 @@ func PrintMessage(window *Window, message string) {
 func drawMessageBar(window *Window) {
 	screen := window.screen
 
-	messageBarStyle := tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.Color236)
+	messageBarStyle := tcell.StyleDefault.Background(CurrentStyle.MessageBarBg).Foreground(CurrentStyle.MessageBarFg)
 
 	sizeX, sizeY := screen.Size()
 

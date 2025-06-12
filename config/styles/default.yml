@@ -1,0 +1,21 @@
+# Metadata
+name: "default"
+description: "The default look of Typer"
+style_type: "256-color"
+
+# Colors
+colors:
+  buffer_area_bg: "234" # Buffer area background color
+  buffer_area_fg: "white" # Buffer area text color
+  buffer_area_sel: "243" # Buffer area selected text and cursor background color
+  top_menu_bg: "236" # Top menu background color
+  top_menu_fg: "white" # Top menu text color
+  dropdown_bg: "236" # Dropdown background color
+  dropdown_fg: "white" # Dropdown text color
+  dropdown_sel: "240" # Dropdown selected option background color
+  line_index_bg: "235" # Line index background color
+  line_index_fg: "dimgray" # Line index text color
+  message_bar_bg: "236" # Message bar background color
+  message_bar_fg: "white" # Message bar text color
+  input_bar_bg: "236" # Input bar background color
+  input_bar_fg: "white" # Input bar text color

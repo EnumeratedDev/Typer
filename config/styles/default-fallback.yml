@@ -1,0 +1,21 @@
+# Metadata
+name: "default-fallback"
+description: "The default look of Typer - Fallback style"
+style_type: "8-color"
+
+# Colors
+colors:
+  buffer_area_bg: "black" # Buffer area background color
+  buffer_area_fg: "white" # Buffer area text color
+  buffer_area_sel: "navy" # Buffer area selected text and cursor background color
+  top_menu_bg: "white" # Top menu background color
+  top_menu_fg: "black" # Top -menu text color
+  dropdown_bg: "white" # Dropdown background color
+  dropdown_fg: "black" # Dropdown text color
+  dropdown_sel: "navy" # Dropdown selected option background color
+  line_index_bg: "white" # Line index background color
+  line_index_fg: "black" # Line index text color
+  message_bar_bg: "white" # Message bar background color
+  message_bar_fg: "black" # Message bar text color
+  input_bar_bg: "white" # Input bar background color
+  input_bar_fg: "black" # Input bar text color

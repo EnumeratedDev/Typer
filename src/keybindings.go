@@ -2,106 +2,86 @@ package main
 
 import (
 	"github.com/gdamore/tcell/v2"
+	"gopkg.in/yaml.v3"
+	"log"
+	"os"
+	"path"
 	"strings"
 )
 
+type TyperKeybindings struct {
+	Keybindings []Keybinding `yaml:"keybindings"`
+}
+
 type Keybinding struct {
-	keybind     string
-	cursorModes []CursorMode
-	command     string
+	Keybinding  string   `yaml:"keybinding"`
+	CursorModes []string `yaml:"cursor_modes"`
+	Command     string   `yaml:"command"`
 }
 
-var Keybinds = make([]Keybinding, 0)
+var Keybindings TyperKeybindings
 
-func initKeybindings() {
-	// Add key bindings
-	Keybinds = append(Keybinds, Keybinding{
-		keybind:     "Ctrl-Q",
-		cursorModes: []CursorMode{CursorModeBuffer},
-		command:     "quit",
-	})
-	Keybinds = append(Keybinds, Keybinding{
-		keybind:     "Ctrl-C",
-		cursorModes: []CursorMode{CursorModeBuffer},
-		command:     "copy",
-	})
-	Keybinds = append(Keybinds, Keybinding{
-		keybind:     "Ctrl-V",
-		cursorModes: []CursorMode{CursorModeBuffer},
-		command:     "paste",
-	})
-	Keybinds = append(Keybinds, Keybinding{
-		keybind:     "Ctrl-S",
-		cursorModes: []CursorMode{CursorModeBuffer},
-		command:     "save",
-	})
-	Keybinds = append(Keybinds, Keybinding{
-		keybind:     "Ctrl-O",
-		cursorModes: []CursorMode{CursorModeBuffer},
-		command:     "open",
-	})
-	Keybinds = append(Keybinds, Keybinding{
-		keybind:     "Ctrl-R",
-		cursorModes: []CursorMode{CursorModeBuffer},
-		command:     "reload",
-	})
-	Keybinds = append(Keybinds, Keybinding{
-		keybind:     "PgUp",
-		cursorModes: []CursorMode{CursorModeBuffer},
-		command:     "prev-buffer",
-	})
-	Keybinds = append(Keybinds, Keybinding{
-		keybind:     "PgDn",
-		cursorModes: []CursorMode{CursorModeBuffer},
-		command:     "next-buffer",
-	})
-	Keybinds = append(Keybinds, Keybinding{
-		keybind:     "Ctrl-N",
-		cursorModes: []CursorMode{CursorModeBuffer},
-		command:     "new-buffer",
-	})
-	Keybinds = append(Keybinds, Keybinding{
-		keybind:     "Delete",
-		cursorModes: []CursorMode{CursorModeBuffer},
-		command:     "close-buffer",
-	})
-	Keybinds = append(Keybinds, Keybinding{
-		keybind:     "Ctrl-Q",
-		cursorModes: []CursorMode{CursorModeBuffer},
-		command:     "quit",
-	})
-	Keybinds = append(Keybinds, Keybinding{
-		keybind:     "F1",
-		cursorModes: []CursorMode{CursorModeBuffer, CursorModeDropdown},
-		command:     "menu-file",
-	})
-	Keybinds = append(Keybinds, Keybinding{
-		keybind:     "F2",
-		cursorModes: []CursorMode{CursorModeBuffer, CursorModeDropdown},
-		command:     "menu-edit",
-	})
-	Keybinds = append(Keybinds, Keybinding{
-		keybind:     "F3",
-		cursorModes: []CursorMode{CursorModeBuffer, CursorModeDropdown},
-		command:     "menu-buffers",
-	})
+func readKeybindings() {
+	Keybindings = TyperKeybindings{
+		Keybindings: make([]Keybinding, 0),
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatalf("Could not get home directory: %s", err)
+	}
+
+	if _, err := os.Stat(path.Join(homeDir, ".config/typer/keybindings.yml")); err == nil {
+		data, err := os.ReadFile(path.Join(homeDir, ".config/typer/keybindings.yml"))
+		if err != nil {
+			log.Fatalf("Could not read keybindings.yml: %s", err)
+		}
+		err = yaml.Unmarshal(data, &Keybindings)
+		if err != nil {
+			log.Fatalf("Could not unmarshal keybindings.yml: %s", err)
+		}
+	} else if _, err := os.Stat("/etc/typer/keybindings.yml"); err == nil {
+		reader, err := os.Open("/etc/typer/keybindings.yml")
+		if err != nil {
+			log.Fatalf("Could not read keybindings.yml: %s", err)
+		}
+		err = yaml.NewDecoder(reader).Decode(&Keybindings)
+		if err != nil {
+			log.Fatalf("Could not read keybindings.yml: %s", err)
+		}
+		reader.Close()
+	}
 }
 
-func (keybind *Keybinding) IsPressed(ev *tcell.EventKey) bool {
-	keys := strings.SplitN(keybind.keybind, "+", 2)
+func (keybinding *Keybinding) GetCursorModes() []CursorMode {
+	ret := make([]CursorMode, 0)
+
+	for _, cursorModeStr := range keybinding.CursorModes {
+		for key, value := range CursorModeNames {
+			if cursorModeStr == value {
+				ret = append(ret, key)
+			}
+		}
+	}
+
+	return ret
+}
+
+func (keybinding *Keybinding) IsPressed(ev *tcell.EventKey) bool {
+	keys := strings.SplitN(keybinding.Keybinding, "+", 2)
 
 	if len(keys) == 0 {
 		return false
 	} else if len(keys) == 1 {
 		for k, v := range tcell.KeyNames {
 			if k != tcell.KeyRune {
-				if keybind.keybind == v {
+				if keybinding.Keybinding == v {
 					if ev.Key() == k {
 						return true
 					}
 				}
 			} else {
-				if keybind.keybind == string(ev.Rune()) {
+				if keybinding.Keybinding == string(ev.Rune()) {
 					return true
 				}
 			}

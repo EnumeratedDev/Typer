@@ -6,11 +6,17 @@ import (
 )
 
 func main() {
+	// Read config
+	readConfig()
+
+	// Read key bindings
+	readKeybindings()
+
+	// Read styles
+	readStyles()
+
 	// Initialize commands
 	initCommands()
-
-	// Initialize key bindings
-	initKeybindings()
 
 	window, err := CreateWindow()
 	if err != nil {
