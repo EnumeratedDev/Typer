@@ -63,6 +63,18 @@ func (buffer *Buffer) Save() error {
 	return nil
 }
 
+func (buffer *Buffer) GetSelectionEdges() (int, int) {
+	if buffer.Selection == nil {
+		return -1, -1
+	}
+
+	if buffer.Selection.selectionStart < buffer.Selection.selectionEnd {
+		return buffer.Selection.selectionStart, buffer.Selection.selectionEnd
+	} else {
+		return buffer.Selection.selectionEnd, buffer.Selection.selectionStart
+	}
+}
+
 func (buffer *Buffer) GetSelectedText() string {
 	if buffer.Selection == nil {
 		return ""

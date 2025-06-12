@@ -90,16 +90,7 @@ func (window *Window) drawCurrentBuffer() {
 
 			// Change background if selected
 			if buffer.Selection != nil {
-				if buffer.Selection.selectionEnd >= buffer.Selection.selectionStart && i >= buffer.Selection.selectionStart && i <= buffer.Selection.selectionEnd {
-					style = style.Background(tcell.Color243)
-
-					// Show selection on entire tab space
-					if r == '\t' {
-						for j := 0; j < 4; j++ {
-							window.screen.SetContent(x+j-buffer.OffsetX, y-buffer.OffsetY, r, nil, style)
-						}
-					}
-				} else if i <= buffer.Selection.selectionStart && i >= buffer.Selection.selectionEnd {
+				if edge1, edge2 := buffer.GetSelectionEdges(); i >= edge1 && i <= edge2 {
 					style = style.Background(tcell.Color243)
 
 					// Show selection on entire tab space
@@ -349,7 +340,17 @@ func (window *Window) input(ev *tcell.EventKey) {
 			str := window.CurrentBuffer.Contents
 			index := window.CurrentBuffer.CursorPos
 
-			if index != 0 {
+			if window.CurrentBuffer.Selection != nil {
+				edge1, edge2 := window.CurrentBuffer.GetSelectionEdges()
+				if edge2 == len(window.CurrentBuffer.Contents) {
+					edge2 = len(window.CurrentBuffer.Contents) - 1
+				}
+
+				str = str[:edge1] + str[edge2+1:]
+				window.CurrentBuffer.Contents = str
+				window.SetCursorPos(edge1)
+				window.CurrentBuffer.Selection = nil
+			} else if index != 0 {
 				str = str[:index-1] + str[index:]
 				window.CurrentBuffer.Contents = str
 				window.SetCursorPos(window.CurrentBuffer.CursorPos - 1)
@@ -367,6 +368,20 @@ func (window *Window) input(ev *tcell.EventKey) {
 	} else if ev.Key() == tcell.KeyTab {
 		if window.CursorMode == CursorModeBuffer {
 			str := window.CurrentBuffer.Contents
+
+			// Remove selected text
+			if window.CurrentBuffer.Selection != nil {
+				edge1, edge2 := window.CurrentBuffer.GetSelectionEdges()
+				if edge2 == len(window.CurrentBuffer.Contents) {
+					edge2 = len(window.CurrentBuffer.Contents) - 1
+				}
+
+				str = str[:edge1] + str[edge2+1:]
+				window.CurrentBuffer.Contents = str
+				window.SetCursorPos(edge1)
+				window.CurrentBuffer.Selection = nil
+			}
+
 			index := window.CurrentBuffer.CursorPos
 
 			if index == len(str) {
@@ -380,6 +395,20 @@ func (window *Window) input(ev *tcell.EventKey) {
 	} else if ev.Key() == tcell.KeyEnter {
 		if window.CursorMode == CursorModeBuffer {
 			str := window.CurrentBuffer.Contents
+
+			// Remove selected text
+			if window.CurrentBuffer.Selection != nil {
+				edge1, edge2 := window.CurrentBuffer.GetSelectionEdges()
+				if edge2 == len(window.CurrentBuffer.Contents) {
+					edge2 = len(window.CurrentBuffer.Contents) - 1
+				}
+
+				str = str[:edge1] + str[edge2+1:]
+				window.CurrentBuffer.Contents = str
+				window.SetCursorPos(edge1)
+				window.CurrentBuffer.Selection = nil
+			}
+
 			index := window.CurrentBuffer.CursorPos
 
 			if index == len(str) {
@@ -403,6 +432,20 @@ func (window *Window) input(ev *tcell.EventKey) {
 	} else if ev.Key() == tcell.KeyRune {
 		if window.CursorMode == CursorModeBuffer {
 			str := window.CurrentBuffer.Contents
+
+			// Remove selected text
+			if window.CurrentBuffer.Selection != nil {
+				edge1, edge2 := window.CurrentBuffer.GetSelectionEdges()
+				if edge2 == len(window.CurrentBuffer.Contents) {
+					edge2 = len(window.CurrentBuffer.Contents) - 1
+				}
+
+				str = str[:edge1] + str[edge2+1:]
+				window.CurrentBuffer.Contents = str
+				window.SetCursorPos(edge1)
+				window.CurrentBuffer.Selection = nil
+			}
+
 			index := window.CurrentBuffer.CursorPos
 
 			if index == len(str) {
