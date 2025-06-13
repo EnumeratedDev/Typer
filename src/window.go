@@ -187,16 +187,47 @@ func (window *Window) Draw() {
 func (window *Window) input(ev *tcell.EventKey) {
 	if ev.Key() == tcell.KeyRight { // Navigation Keys
 		if window.CursorMode == CursorModeBuffer {
+			// Get original cursor position
+			pos := window.CurrentBuffer.CursorPos
+
+			if ev.Modifiers()&tcell.ModCtrl != 0 {
+				// Move cursor to start of word
+				// Set variable to one character right of current position
+				endOfWord := pos + 1
+				if endOfWord >= len(window.CurrentBuffer.Contents) {
+					endOfWord = len(window.CurrentBuffer.Contents)
+				}
+
+				// Skip all spaces
+				for endOfWord < len(window.CurrentBuffer.Contents) && unicode.IsSpace(rune(window.CurrentBuffer.Contents[endOfWord])) {
+					endOfWord++
+				}
+
+				// Find end of word
+				for endOfWord < len(window.CurrentBuffer.Contents) && !unicode.IsSpace(rune(window.CurrentBuffer.Contents[endOfWord])) {
+					endOfWord++
+				}
+
+				window.SetCursorPos(endOfWord)
+			} else {
+				// Move cursor one character backwards
+				window.SetCursorPos(window.CurrentBuffer.CursorPos + 1)
+			}
+
 			// Add to selection
-			if ev.Modifiers() == tcell.ModShift {
+			if ev.Modifiers()&tcell.ModShift != 0 {
 				if window.CurrentBuffer.Selection == nil {
+					// Cancel cursor movement when creating selection without holding ctrl
+					if ev.Modifiers()&tcell.ModCtrl == 0 {
+						window.SetCursorPos(pos)
+					}
+
 					window.CurrentBuffer.Selection = &Selection{
-						selectionStart: window.CurrentBuffer.CursorPos,
+						selectionStart: pos,
 						selectionEnd:   window.CurrentBuffer.CursorPos,
 					}
-					return
 				} else {
-					window.CurrentBuffer.Selection.selectionEnd = window.CurrentBuffer.CursorPos + 1
+					window.CurrentBuffer.Selection.selectionEnd = window.CurrentBuffer.CursorPos
 				}
 				// Prevent selecting dummy character at the end of the buffer
 				if window.CurrentBuffer.Selection.selectionEnd >= len(window.CurrentBuffer.Contents) {
@@ -205,46 +236,83 @@ func (window *Window) input(ev *tcell.EventKey) {
 			} else if window.CurrentBuffer.Selection != nil {
 				// Unset selection
 				window.CurrentBuffer.Selection = nil
-				return
 			}
-			// Move cursor
-			window.SetCursorPos(window.CurrentBuffer.CursorPos + 1)
 		}
 	} else if ev.Key() == tcell.KeyLeft {
 		if window.CursorMode == CursorModeBuffer {
+			// Get original cursor position
+			pos := window.CurrentBuffer.CursorPos
+
+			if ev.Modifiers()&tcell.ModCtrl != 0 {
+				// Move cursor to start of word
+				// Set variable to one character left of current position
+				startOfWord := pos - 1
+				if startOfWord < 0 {
+					startOfWord = 0
+				}
+
+				// Skip all spaces
+				for startOfWord >= 0 && len(window.CurrentBuffer.Contents) != 0 && unicode.IsSpace(rune(window.CurrentBuffer.Contents[startOfWord])) {
+					startOfWord--
+				}
+
+				// Find start of word
+				for startOfWord >= 0 && len(window.CurrentBuffer.Contents) != 0 && !unicode.IsSpace(rune(window.CurrentBuffer.Contents[startOfWord])) {
+					startOfWord--
+				}
+
+				// Move one character to the right
+				startOfWord++
+
+				window.SetCursorPos(startOfWord)
+			} else {
+				// Move cursor one character backwards
+				window.SetCursorPos(window.CurrentBuffer.CursorPos - 1)
+			}
+
 			// Add to selection
-			if ev.Modifiers() == tcell.ModShift {
+			if ev.Modifiers()&tcell.ModShift != 0 {
 				if window.CurrentBuffer.Selection == nil {
+					// Cancel cursor movement when creating selection without holding ctrl
+					if ev.Modifiers()&tcell.ModCtrl == 0 {
+						window.SetCursorPos(pos)
+					}
+
 					window.CurrentBuffer.Selection = &Selection{
-						selectionStart: window.CurrentBuffer.CursorPos,
+						selectionStart: pos,
 						selectionEnd:   window.CurrentBuffer.CursorPos,
 					}
 					return
 				} else {
-					window.CurrentBuffer.Selection.selectionEnd = window.CurrentBuffer.CursorPos - 1
+					window.CurrentBuffer.Selection.selectionEnd = window.CurrentBuffer.CursorPos
 				}
 			} else if window.CurrentBuffer.Selection != nil {
 				// Unset selection
 				window.CurrentBuffer.Selection = nil
 				return
 			}
-			// Move cursor
-			window.SetCursorPos(window.CurrentBuffer.CursorPos - 1)
 		}
 	} else if ev.Key() == tcell.KeyUp {
 		if window.CursorMode == CursorModeBuffer {
 			// Get original cursor position
 			pos := window.CurrentBuffer.CursorPos
-			// Move cursor
-			x, y := window.GetCursorPos2D()
-			window.SetCursorPos2D(x, y-1)
+
+			if ev.Modifiers()&tcell.ModCtrl != 0 {
+				// Move cursor to top of buffer
+				window.SetCursorPos(0)
+			} else {
+				// Move cursor one line up
+				x, y := window.GetCursorPos2D()
+				window.SetCursorPos2D(x, y-1)
+			}
+
 			// Add to selection
-			if ev.Modifiers() == tcell.ModShift {
+			if ev.Modifiers()&tcell.ModShift != 0 {
 				// Add to selection
 				if window.CurrentBuffer.Selection == nil {
 					window.CurrentBuffer.Selection = &Selection{
-						selectionStart: window.CurrentBuffer.CursorPos,
-						selectionEnd:   pos,
+						selectionStart: pos,
+						selectionEnd:   window.CurrentBuffer.CursorPos,
 					}
 				} else {
 					window.CurrentBuffer.Selection.selectionEnd = window.CurrentBuffer.CursorPos
@@ -279,11 +347,18 @@ func (window *Window) input(ev *tcell.EventKey) {
 		if window.CursorMode == CursorModeBuffer {
 			// Get original cursor position
 			pos := window.CurrentBuffer.CursorPos
-			// Move cursor
-			x, y := window.GetCursorPos2D()
-			window.SetCursorPos2D(x, y+1)
+
+			if ev.Modifiers()&tcell.ModCtrl != 0 {
+				// Move cursor to bottom of buffer
+				window.SetCursorPos(len(window.CurrentBuffer.Contents))
+			} else {
+				// Move cursor one line down
+				x, y := window.GetCursorPos2D()
+				window.SetCursorPos2D(x, y+1)
+			}
+
 			// Add to selection
-			if ev.Modifiers() == tcell.ModShift {
+			if ev.Modifiers()&tcell.ModShift != 0 {
 				// Add to selection
 				if window.CurrentBuffer.Selection == nil {
 					window.CurrentBuffer.Selection = &Selection{
