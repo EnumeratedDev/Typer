@@ -8,22 +8,24 @@ import (
 )
 
 type TyperConfig struct {
-	SelectedStyle  string `yaml:"selected_style,omitempty"`
-	FallbackStyle  string `yaml:"fallback_style,omitempty"`
-	ShowTopMenu    bool   `yaml:"show_top_menu,omitempty"`
-	ShowLineIndex  bool   `yaml:"show_line_index,omitempty"`
-	TabIndentation int    `yaml:"tab_indentation,omitempty"`
+	SelectedStyle     string `yaml:"selected_style,omitempty"`
+	FallbackStyle     string `yaml:"fallback_style,omitempty"`
+	ShowTopMenu       bool   `yaml:"show_top_menu,omitempty"`
+	ShowLineIndex     bool   `yaml:"show_line_index,omitempty"`
+	BufferInfoMessage string `yaml:"buffer_info_message,omitempty"`
+	TabIndentation    int    `yaml:"tab_indentation,omitempty"`
 }
 
 var Config TyperConfig
 
 func readConfig() {
 	Config = TyperConfig{
-		SelectedStyle:  "default",
-		FallbackStyle:  "default-fallback",
-		ShowTopMenu:    true,
-		ShowLineIndex:  true,
-		TabIndentation: 4,
+		SelectedStyle:     "default",
+		FallbackStyle:     "default-fallback",
+		ShowTopMenu:       true,
+		ShowLineIndex:     true,
+		BufferInfoMessage: "File: %f Cursor: (%x, %y, %p) Chars: %c",
+		TabIndentation:    4,
 	}
 
 	homeDir, err := os.UserHomeDir()

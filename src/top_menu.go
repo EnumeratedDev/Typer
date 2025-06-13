@@ -133,11 +133,38 @@ func drawTopMenu(window *Window) {
 	}
 
 	// Draw buffer info
+	bufferInfoMsg := getBufferInfoMsg(window)
+	drawText(screen, sizeX-len(bufferInfoMsg)-1, 0, sizeX-1, 0, topMenuStyle, bufferInfoMsg)
+}
+
+func getBufferInfoMsg(window *Window) string {
+	pathToFile := "Not set"
 	filename := "Not set"
+	if window.CurrentBuffer.filename != "" {
+		pathToFile = window.CurrentBuffer.filename
+	}
 	if filepath.Base(window.CurrentBuffer.filename) != "." {
 		filename = filepath.Base(window.CurrentBuffer.filename)
 	}
+
+	cursorPos := window.CurrentBuffer.CursorPos
 	cursorX, cursorY := window.GetCursorPos2D()
-	cursorInfo := fmt.Sprintf("File: %s Cursor: (%d,%d,%d) Words: %d", filename, cursorX+1, cursorY+1, window.CurrentBuffer.CursorPos+1, len(strings.Fields(window.CurrentBuffer.Contents)))
-	drawText(screen, sizeX-len(cursorInfo)-1, 0, sizeX-1, 0, topMenuStyle, cursorInfo)
+	cursorX++
+	cursorY++
+
+	chars := len(window.CurrentBuffer.Contents)
+	words := len(strings.Fields(window.CurrentBuffer.Contents))
+
+	ret := Config.BufferInfoMessage
+
+	ret = strings.ReplaceAll(ret, "\n", " ")
+	ret = strings.ReplaceAll(ret, "%F", pathToFile)
+	ret = strings.ReplaceAll(ret, "%f", filename)
+	ret = strings.ReplaceAll(ret, "%x", strconv.Itoa(cursorX))
+	ret = strings.ReplaceAll(ret, "%y", strconv.Itoa(cursorY))
+	ret = strings.ReplaceAll(ret, "%p", strconv.Itoa(cursorPos))
+	ret = strings.ReplaceAll(ret, "%c", strconv.Itoa(chars))
+	ret = strings.ReplaceAll(ret, "%w", strconv.Itoa(words))
+
+	return ret
 }
