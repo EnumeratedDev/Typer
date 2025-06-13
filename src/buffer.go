@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gdamore/tcell/v2"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,6 +29,52 @@ type Selection struct {
 
 var Buffers = make(map[int]*Buffer)
 var LastBufferId int
+
+func drawBuffer(window *Window) {
+	buffer := window.CurrentBuffer
+
+	x, y, _, _ := window.GetTextAreaDimensions()
+
+	bufferX, bufferY, _, _ := window.GetTextAreaDimensions()
+
+	for i, r := range buffer.Contents + " " {
+		if x-buffer.OffsetX >= bufferX && y-buffer.OffsetY >= bufferY {
+			// Default style
+			style := tcell.StyleDefault.Background(CurrentStyle.BufferAreaBg).Foreground(CurrentStyle.BufferAreaFg)
+
+			// Change background if under cursor
+			if i == buffer.CursorPos {
+				style = style.Background(CurrentStyle.BufferAreaSel)
+			}
+
+			// Change background if selected
+			if buffer.Selection != nil {
+				if edge1, edge2 := buffer.GetSelectionEdges(); i >= edge1 && i <= edge2 {
+					style = style.Background(CurrentStyle.BufferAreaSel)
+
+					// Show selection on entire tab space
+					if r == '\t' {
+						for j := 0; j < int(Config.TabIndentation); j++ {
+							window.screen.SetContent(x+j-buffer.OffsetX, y-buffer.OffsetY, r, nil, style)
+						}
+					}
+				}
+			}
+
+			window.screen.SetContent(x-buffer.OffsetX, y-buffer.OffsetY, r, nil, style)
+		}
+
+		// Change position for next character
+		if r == '\n' {
+			x = bufferX
+			y++
+		} else if r == '\t' {
+			x += int(Config.TabIndentation)
+		} else {
+			x++
+		}
+	}
+}
 
 func (buffer *Buffer) Load() error {
 	// Do not load if canSave is false or filename is not set
