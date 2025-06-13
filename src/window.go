@@ -5,6 +5,8 @@ import (
 	"log"
 	"slices"
 	"strings"
+	"time"
+	"unicode"
 )
 
 type CursorMode uint8
@@ -36,6 +38,7 @@ type Window struct {
 }
 
 var mouseHeld = false
+var lastClick int64 = 0
 
 func CreateWindow() (*Window, error) {
 	window := Window{
@@ -484,9 +487,12 @@ func (window *Window) mouseInput(ev *tcell.EventMouse) {
 
 	// Left click was pressed
 	if ev.Buttons() == tcell.Button1 {
+		// Get last click time
+		lastClickTime := time.UnixMilli(lastClick)
 		// Ensure click was in buffer area
 		x1, y1, x2, y2 := window.GetTextAreaDimensions()
 		if mouseX >= x1 && mouseY >= y1 && mouseX <= x2 && mouseY <= y2 {
+			currentX, currentY := window.GetCursorPos2D()
 			bufferMouseX, bufferMouseY := window.AbsolutePosToCursorPos2D(mouseX, mouseY)
 			if mouseHeld {
 				// Add to selection
@@ -495,6 +501,10 @@ func (window *Window) mouseInput(ev *tcell.EventMouse) {
 						selectionStart: window.CurrentBuffer.CursorPos,
 						selectionEnd:   window.CursorPos2DToCursorPos(bufferMouseX, bufferMouseY),
 					}
+
+					// Set last click time
+					lastClick = time.Now().UnixMilli()
+
 					return
 				} else {
 					window.CurrentBuffer.Selection.selectionEnd = window.CursorPos2DToCursorPos(bufferMouseX, bufferMouseY)
@@ -503,6 +513,74 @@ func (window *Window) mouseInput(ev *tcell.EventMouse) {
 				if window.CurrentBuffer.Selection.selectionEnd >= len(window.CurrentBuffer.Contents) {
 					window.CurrentBuffer.Selection.selectionEnd = len(window.CurrentBuffer.Contents) - 1
 				}
+			} else if currentX == bufferMouseX && currentY == bufferMouseY && window.CurrentBuffer.CursorPos < len(window.CurrentBuffer.Contents) && time.Since(lastClickTime).Milliseconds() < 300 {
+				selectedText := window.CurrentBuffer.GetSelectedText()
+				if window.CurrentBuffer.Selection == nil || strings.HasSuffix(selectedText, "\n") {
+					// Select word
+					startOfWord := window.CurrentBuffer.CursorPos
+					endOfWord := window.CurrentBuffer.CursorPos
+
+					// Find end of word
+					for i := window.CurrentBuffer.CursorPos + 1; i < len(window.CurrentBuffer.Contents); i++ {
+						currentRune := rune(window.CurrentBuffer.Contents[i])
+						if unicode.IsLetter(currentRune) || unicode.IsDigit(currentRune) || currentRune == '_' {
+							endOfWord++
+						} else {
+							break
+						}
+					}
+
+					// Find start of word
+					for i := window.CurrentBuffer.CursorPos - 1; i >= 0; i-- {
+						currentRune := rune(window.CurrentBuffer.Contents[i])
+						if unicode.IsLetter(currentRune) || unicode.IsDigit(currentRune) || currentRune == '_' {
+							startOfWord--
+						} else {
+							break
+						}
+					}
+
+					// Add to selection
+					window.CurrentBuffer.Selection = &Selection{
+						selectionStart: startOfWord,
+						selectionEnd:   endOfWord,
+					}
+				} else {
+					// Select line
+					startOfLine := window.CurrentBuffer.CursorPos
+					endOfLine := window.CurrentBuffer.CursorPos
+
+					// Find end of line
+					for i := window.CurrentBuffer.CursorPos + 1; i < len(window.CurrentBuffer.Contents); i++ {
+						currentLetter := window.CurrentBuffer.Contents[i]
+
+						endOfLine++
+						if currentLetter == '\n' {
+							break
+						}
+					}
+
+					// Find start of line
+					for i := window.CurrentBuffer.CursorPos - 1; i >= 0; i-- {
+						currentLetter := window.CurrentBuffer.Contents[i]
+						if currentLetter != '\n' {
+							startOfLine--
+						} else {
+							break
+						}
+					}
+
+					// Add to selection
+					window.CurrentBuffer.Selection = &Selection{
+						selectionStart: startOfLine,
+						selectionEnd:   endOfLine,
+					}
+				}
+
+				// Set last click time
+				lastClick = time.Now().UnixMilli()
+
+				return
 			} else {
 				// Clear selection
 				if window.CurrentBuffer.Selection != nil {
@@ -511,6 +589,9 @@ func (window *Window) mouseInput(ev *tcell.EventMouse) {
 			}
 			// Move cursor
 			window.SetCursorPos2D(bufferMouseX, bufferMouseY)
+
+			// Set last click time
+			lastClick = time.Now().UnixMilli()
 		}
 		mouseHeld = true
 	} else if ev.Buttons() == tcell.ButtonNone {
