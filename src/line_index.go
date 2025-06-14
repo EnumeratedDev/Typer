@@ -12,16 +12,22 @@ func drawLineIndex(window *Window) {
 
 	lineIndexStyle := tcell.StyleDefault.Background(CurrentStyle.LineIndexBg).Foreground(CurrentStyle.LineIndexFg)
 
-	_, sizeY := screen.Size()
-
-	y := 0
-	if window.ShowTopMenu {
-		y = 1
-	}
-
 	lineIndexSize := getLineIndexSize(window)
 
-	for lineIndex := 1 + buffer.OffsetY; lineIndex <= strings.Count(buffer.Contents, "\n")+1 && lineIndex < sizeY+buffer.OffsetY; lineIndex++ {
+	_, bufferY1, _, bufferY2 := window.GetTextAreaDimensions()
+
+	lineIndex := 1 + buffer.OffsetY
+	for y := bufferY1; y <= bufferY2; y++ {
+		if lineIndex > strings.Count(buffer.Contents, "\n")+1 {
+			if Config.ExtendLineIndex {
+				for x := 0; x < lineIndexSize; x++ {
+					screen.SetContent(x, y, ' ', nil, lineIndexStyle)
+				}
+				continue
+			} else {
+				break
+			}
+		}
 
 		for x := 0; x < lineIndexSize; x++ {
 			screen.SetContent(x, y, ' ', nil, lineIndexStyle)
@@ -30,7 +36,8 @@ func drawLineIndex(window *Window) {
 		text := strconv.Itoa(lineIndex)
 
 		drawText(screen, lineIndexSize-len(text)-1, y, lineIndexSize, y, lineIndexStyle, text)
-		y++
+
+		lineIndex++
 	}
 }
 

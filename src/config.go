@@ -12,6 +12,7 @@ type TyperConfig struct {
 	FallbackStyle     string `yaml:"fallback_style,omitempty"`
 	ShowTopMenu       bool   `yaml:"show_top_menu,omitempty"`
 	ShowLineIndex     bool   `yaml:"show_line_index,omitempty"`
+	ExtendLineIndex   bool   `yaml:"extend_line_index,omitempty"`
 	BufferInfoMessage string `yaml:"buffer_info_message,omitempty"`
 	TabIndentation    int    `yaml:"tab_indentation,omitempty"`
 }
@@ -24,6 +25,7 @@ func readConfig() {
 		FallbackStyle:     "default-fallback",
 		ShowTopMenu:       true,
 		ShowLineIndex:     true,
+		ExtendLineIndex:   false,
 		BufferInfoMessage: "File: %f Cursor: (%x, %y, %p) Chars: %c",
 		TabIndentation:    4,
 	}
