@@ -148,6 +148,7 @@ func initCommands() {
 			}
 
 			window.CurrentBuffer = Buffers[index]
+			PrintMessage(window, fmt.Sprintf("Set current buffer to '%s'.", window.CurrentBuffer.Name))
 		},
 	}
 
@@ -166,6 +167,7 @@ func initCommands() {
 			}
 
 			window.CurrentBuffer = Buffers[index]
+			PrintMessage(window, fmt.Sprintf("Set current buffer to '%s'.", window.CurrentBuffer.Name))
 		},
 	}
 
@@ -181,6 +183,7 @@ func initCommands() {
 			}
 
 			window.CursorMode = CursorModeBuffer
+			PrintMessage(window, fmt.Sprintf("New buffer created with the name '%s'.", window.CurrentBuffer.Name))
 		},
 	}
 
@@ -199,6 +202,7 @@ func initCommands() {
 				window.CurrentBuffer = Buffers[bufferIndex]
 			}
 			window.CursorMode = CursorModeBuffer
+			PrintMessage(window, "Buffer closed.")
 		},
 	}
 
