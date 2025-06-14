@@ -138,13 +138,13 @@ func (window *Window) ProcessEvents() {
 		window.screen.Sync()
 		window.SyncBufferOffset()
 	case *tcell.EventMouse:
-		window.mouseInput(ev)
+		window.handleMouseInput(ev)
 	case *tcell.EventKey:
-		window.input(ev)
+		window.handleKeyInput(ev)
 	}
 }
 
-func (window *Window) input(ev *tcell.EventKey) {
+func (window *Window) handleKeyInput(ev *tcell.EventKey) {
 	if ev.Key() == tcell.KeyRight { // Navigation Keys
 		if window.CursorMode == CursorModeBuffer {
 			// Get original cursor position
@@ -517,7 +517,7 @@ func (window *Window) input(ev *tcell.EventKey) {
 	}
 }
 
-func (window *Window) mouseInput(ev *tcell.EventMouse) {
+func (window *Window) handleMouseInput(ev *tcell.EventMouse) {
 	mouseX, mouseY := ev.Position()
 
 	// Left click was pressed
