@@ -126,7 +126,9 @@ func (window *Window) Draw() {
 
 	// Update screen
 	window.screen.Show()
+}
 
+func (window *Window) ProcessEvents() {
 	// Poll event
 	ev := window.screen.PollEvent()
 

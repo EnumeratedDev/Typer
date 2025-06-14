@@ -40,6 +40,7 @@ func main() {
 
 	for window.screen != nil {
 		window.Draw()
+		window.ProcessEvents()
 	}
 
 }
