@@ -24,16 +24,16 @@ func main() {
 	}
 
 	if len(os.Args) > 1 {
-		for _, file := range os.Args[1:] {
+		for i, file := range os.Args[1:] {
 			b, err := CreateFileBuffer(file, true)
 			if err != nil {
 				PrintMessage(window, "Could not open file: "+file)
 				continue
 			}
 
-			if window.CurrentBuffer.Name == "New File 1" {
-				delete(Buffers, window.CurrentBuffer.Id)
+			if i == 0 {
 				window.CurrentBuffer = b
+				Buffers = Buffers[1:]
 			}
 		}
 	}

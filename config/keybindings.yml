@@ -22,7 +22,7 @@ keybindings:
     command: "prev-buffer"
   - keybinding: "PgDn"
     cursor_modes: ["buffer"]
-    command: "prev-buffer"
+    command: "next-buffer"
   - keybinding: "Ctrl-N"
     cursor_modes: ["buffer"]
     command: "new-buffer"

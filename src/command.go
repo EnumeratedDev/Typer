@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
-	"maps"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -140,15 +140,14 @@ func initCommands() {
 				return
 			}
 
-			buffers := slices.Collect(maps.Values(Buffers))
-			index := slices.Index(buffers, window.CurrentBuffer)
+			index := slices.Index(Buffers, window.CurrentBuffer)
 
 			index--
 			if index < 0 {
 				index = 0
 			}
 
-			window.CurrentBuffer = buffers[index]
+			window.CurrentBuffer = Buffers[index]
 		},
 	}
 
@@ -159,29 +158,28 @@ func initCommands() {
 				return
 			}
 
-			buffers := slices.Collect(maps.Values(Buffers))
-			index := slices.Index(buffers, window.CurrentBuffer)
+			index := slices.Index(Buffers, window.CurrentBuffer)
 
 			index++
-			if index >= len(buffers) {
-				index = len(buffers) - 1
+			if index >= len(Buffers) {
+				index = len(Buffers) - 1
 			}
 
-			window.CurrentBuffer = buffers[index]
+			window.CurrentBuffer = Buffers[index]
 		},
 	}
 
 	newBufferCmd := Command{
 		cmd: "new-buffer",
 		run: func(window *Window, args ...string) {
-			number := 1
-			for _, buffer := range Buffers {
-				if strings.HasPrefix(buffer.Name, "New File ") {
-					number++
+			for i := 1; true; i++ {
+				buffer, err := CreateBuffer("New Buffer " + strconv.Itoa(i))
+				if err == nil {
+					window.CurrentBuffer = buffer
+					break
 				}
 			}
-			buffer := CreateBuffer(fmt.Sprintf("New File %d", number))
-			window.CurrentBuffer = buffer
+
 			window.CursorMode = CursorModeBuffer
 		},
 	}
@@ -189,13 +187,17 @@ func initCommands() {
 	closeBufferCmd := Command{
 		cmd: "close-buffer",
 		run: func(window *Window, args ...string) {
-			delete(Buffers, window.CurrentBuffer.Id)
-			buffersSlice := slices.Collect(maps.Values(Buffers))
-			if len(buffersSlice) == 0 {
+			bufferIndex := slices.Index(Buffers, window.CurrentBuffer)
+			Buffers = DeleteFromSlice(Buffers, bufferIndex)
+			if len(Buffers) == 0 {
 				window.Close()
 				return
 			}
-			window.CurrentBuffer = buffersSlice[0]
+			if bufferIndex >= len(Buffers) {
+				window.CurrentBuffer = Buffers[bufferIndex-1]
+			} else {
+				window.CurrentBuffer = Buffers[bufferIndex]
+			}
 			window.CursorMode = CursorModeBuffer
 		},
 	}

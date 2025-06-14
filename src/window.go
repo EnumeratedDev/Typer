@@ -4,6 +4,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"log"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -52,8 +53,11 @@ func CreateWindow() (*Window, error) {
 	}
 
 	// Create empty buffer if nil
-	if window.CurrentBuffer == nil {
-		window.CurrentBuffer = CreateBuffer("New File 1")
+	for i := 1; window.CurrentBuffer == nil; i++ {
+		buffer, err := CreateBuffer("New Buffer " + strconv.Itoa(i))
+		if err == nil {
+			window.CurrentBuffer = buffer
+		}
 	}
 
 	// Create tcell screen

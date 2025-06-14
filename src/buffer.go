@@ -9,7 +9,6 @@ import (
 )
 
 type Buffer struct {
-	Id       int
 	Name     string
 	Contents string
 
@@ -27,8 +26,25 @@ type Selection struct {
 	selectionEnd   int
 }
 
-var Buffers = make(map[int]*Buffer)
-var LastBufferId int
+var Buffers = make([]*Buffer, 0)
+
+func GetBufferByName(name string) *Buffer {
+	for _, buffer := range Buffers {
+		if buffer.Name == name {
+			return buffer
+		}
+	}
+	return nil
+}
+
+func GetBufferByFilename(filename string) *Buffer {
+	for _, buffer := range Buffers {
+		if buffer.filename == filename {
+			return buffer
+		}
+	}
+	return nil
+}
 
 func drawBuffer(window *Window) {
 	buffer := window.CurrentBuffer
@@ -204,8 +220,15 @@ func CreateFileBuffer(filename string, openNonExistentFile bool) (*Buffer, error
 		}
 	}
 
+	if GetBufferByName(filename) != nil {
+		return nil, fmt.Errorf("a buffer with the name (%s) is already open", filename)
+	}
+
+	if GetBufferByFilename(abs) != nil {
+		return nil, fmt.Errorf("%s is already open in another buffer", filename)
+	}
+
 	buffer := Buffer{
-		Id:        LastBufferId + 1,
 		Name:      filename,
 		Contents:  "",
 		CursorPos: 0,
@@ -222,15 +245,13 @@ func CreateFileBuffer(filename string, openNonExistentFile bool) (*Buffer, error
 		}
 	}
 
-	Buffers[buffer.Id] = &buffer
-	LastBufferId++
+	Buffers = append(Buffers, &buffer)
 
 	return &buffer, nil
 }
 
-func CreateBuffer(bufferName string) *Buffer {
+func CreateBuffer(bufferName string) (*Buffer, error) {
 	buffer := Buffer{
-		Id:        LastBufferId + 1,
 		Name:      bufferName,
 		Contents:  "",
 		CursorPos: 0,
@@ -238,8 +259,11 @@ func CreateBuffer(bufferName string) *Buffer {
 		filename:  "",
 	}
 
-	Buffers[buffer.Id] = &buffer
-	LastBufferId++
+	if GetBufferByName(bufferName) != nil {
+		return nil, fmt.Errorf("a buffer with the name (%s) is already open", bufferName)
+	}
 
-	return &buffer
+	Buffers = append(Buffers, &buffer)
+
+	return &buffer, nil
 }

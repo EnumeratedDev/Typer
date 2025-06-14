@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 )
@@ -82,27 +81,16 @@ func initTopMenu() {
 			}
 
 			buffersSlice := make([]string, 0)
-			for _, buffer := range Buffers {
+			for i, buffer := range Buffers {
 				if window.CurrentBuffer == buffer {
-					buffersSlice = append(buffersSlice, fmt.Sprintf("[%d] * %s", buffer.Id, buffer.Name))
+					buffersSlice = append(buffersSlice, fmt.Sprintf("[%d] * %s", i+1, buffer.Name))
 				} else {
-					buffersSlice = append(buffersSlice, fmt.Sprintf("[%d] %s", buffer.Id, buffer.Name))
+					buffersSlice = append(buffersSlice, fmt.Sprintf("[%d] %s", i+1, buffer.Name))
 				}
 			}
 
-			slices.Sort(buffersSlice)
-
 			d := CreateDropdownMenu(buffersSlice, 0, y, 0, func(i int) {
-				start := strings.Index(buffersSlice[i], "[")
-				end := strings.Index(buffersSlice[i], "]")
-
-				id, err := strconv.Atoi(buffersSlice[i][start+1 : end])
-				if err != nil {
-					PrintMessage(window, fmt.Sprintf("Cannot convert buffer id '%s' to int", buffersSlice[i][start:end]))
-					return
-				}
-
-				window.CurrentBuffer = Buffers[id]
+				window.CurrentBuffer = Buffers[i]
 				ClearDropdowns()
 				window.CursorMode = CursorModeBuffer
 			})

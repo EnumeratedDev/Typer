@@ -53,3 +53,15 @@ func drawBox(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style) {
 
 	drawText(s, x1+1, y1+1, x2-1, y2-1, style, " ")
 }
+
+func DeleteFromSlice[T any](slice []T, i int) []T {
+	if i >= len(slice) {
+		return slice
+	} else if i < 0 {
+		return slice
+	} else if i == len(slice)-1 {
+		return slice[:len(slice)-1]
+	} else {
+		return append(slice[:i], slice[i+1:]...)
+	}
+}
