@@ -202,6 +202,20 @@ func initCommands() {
 		},
 	}
 
+	toggleTopBar := Command{
+		cmd: "toggle-top-bar",
+		run: func(window *Window, args ...string) {
+			window.ShowTopMenu = !window.ShowTopMenu
+		},
+	}
+
+	toggleLineIndex := Command{
+		cmd: "toggle-line-index",
+		run: func(window *Window, args ...string) {
+			window.ShowLineIndex = !window.ShowLineIndex
+		},
+	}
+
 	setStyleCmd := Command{
 		cmd: "set-style",
 		run: func(window *Window, args ...string) {
@@ -343,6 +357,8 @@ func initCommands() {
 	commands["next-buffer"] = &nextBufferCmd
 	commands["new-buffer"] = &newBufferCmd
 	commands["close-buffer"] = &closeBufferCmd
+	commands["toggle-top-bar"] = &toggleTopBar
+	commands["toggle-line-index"] = &toggleLineIndex
 	commands["set-style"] = &setStyleCmd
 	commands["menu-file"] = &menuFileCmd
 	commands["menu-edit"] = &menuEditCmd
