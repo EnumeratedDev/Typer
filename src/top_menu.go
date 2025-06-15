@@ -123,7 +123,9 @@ func drawTopMenu(window *Window) {
 
 	// Draw buffer info
 	bufferInfoMsg := getBufferInfoMsg(window)
-	drawText(screen, sizeX-len(bufferInfoMsg)-1, 0, sizeX-1, 0, topMenuStyle, bufferInfoMsg)
+	if sizeX-len(bufferInfoMsg)-1 > currentX+2 {
+		drawText(screen, sizeX-len(bufferInfoMsg)-1, 0, sizeX-1, 0, topMenuStyle, bufferInfoMsg)
+	}
 }
 
 func getBufferInfoMsg(window *Window) string {
