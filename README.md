@@ -6,6 +6,10 @@
 | ![Example of the Typer's default style](media/default-style.png) | ![Example of the Typer's classic style](media/classic-style.png) |
 
 ### Installation
+#### From a package manager:
+|      Distribution      | Package name         |
+|:----------------------:|:---------------------|
+| Arch Linux/Artix Linux | `typer` from the AUR |
 #### From source:
 - Download `go` from your package manager or from the go website
 - Downlaod `which` from your package manager
