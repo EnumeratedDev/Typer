@@ -36,6 +36,8 @@ type Window struct {
 	CurrentBuffer *Buffer
 
 	screen tcell.Screen
+
+	closed bool
 }
 
 var mouseHeld = false
@@ -637,8 +639,11 @@ func (window *Window) handleMouseInput(ev *tcell.EventMouse) {
 }
 
 func (window *Window) Close() {
-	window.screen.Fini()
-	window.screen = nil
+	window.closed = true
+	err := window.screen.PostEvent(tcell.NewEventInterrupt(nil))
+	if err != nil {
+		return
+	}
 }
 
 func (window *Window) GetTextAreaDimensions() (int, int, int, int) {

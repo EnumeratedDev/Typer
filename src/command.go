@@ -246,6 +246,47 @@ func initCommands() {
 		},
 	}
 
+	executeCmd := Command{
+		cmd: "execute",
+		run: func(window *Window, args ...string) {
+			inputChannel := RequestInput(window, "Run:", "")
+
+			go func() {
+				input := strings.TrimSpace(<-inputChannel)
+
+				if input == "" {
+					return
+				}
+
+				var arguments []string
+
+				builder := &strings.Builder{}
+				quoted := false
+				for _, r := range input {
+					if r == '"' {
+						quoted = !quoted
+					} else if !quoted && r == ' ' {
+						arguments = append(arguments, builder.String())
+						builder.Reset()
+					} else {
+						builder.WriteRune(r)
+					}
+				}
+				if builder.Len() > 0 {
+					arguments = append(arguments, builder.String())
+				}
+
+				window.CursorMode = CursorModeBuffer
+
+				if len(arguments) == 1 {
+					RunCommand(window, arguments[0])
+				} else {
+					RunCommand(window, arguments[0], arguments[1:]...)
+				}
+			}()
+		},
+	}
+
 	// Register commands
 	commands["copy"] = &copyCmd
 	commands["paste"] = &pasteCmd
@@ -260,6 +301,7 @@ func initCommands() {
 	commands["menu-edit"] = &menuEditCmd
 	commands["menu-buffers"] = &menuBuffersCmd
 	commands["quit"] = &quitCmd
+	commands["execute"] = &executeCmd
 }
 
 func RunCommand(window *Window, cmd string, args ...string) bool {

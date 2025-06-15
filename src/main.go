@@ -38,9 +38,11 @@ func main() {
 		}
 	}
 
-	for window.screen != nil {
+	for !window.closed {
 		window.Draw()
 		window.ProcessEvents()
 	}
 
+	window.screen.Fini()
+	window.screen = nil
 }

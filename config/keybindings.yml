@@ -38,3 +38,6 @@ keybindings:
   - keybinding: "F3"
     cursor_modes: ["buffer","dropdown"]
     command: "menu-buffers"
+  - keybinding: "Ctrl-E"
+    cursor_modes: ["buffer"]
+    command: "execute"
