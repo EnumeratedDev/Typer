@@ -21,14 +21,16 @@ func initCommands() {
 	copyCmd := Command{
 		cmd: "copy",
 		run: func(window *Window, args ...string) {
-			if window.CurrentBuffer.Selection == nil {
-				// Copy line
-				_, line := window.GetCursorPos2D()
-				window.Clipboard = strings.SplitAfter(window.CurrentBuffer.Contents, "\n")[line]
+			// Copy text from buffer
+			copiedText, copyingMethod := window.CurrentBuffer.CopyText()
+
+			// Put copied text to clipboard
+			window.Clipboard = copiedText
+
+			// Send appropriate message depending on copying method
+			if copyingMethod == 0 {
 				PrintMessage(window, "Copied line to clipboard.")
 			} else {
-				// Copy selection
-				window.Clipboard = window.CurrentBuffer.GetSelectedText()
 				PrintMessage(window, "Copied selection to clipboard.")
 			}
 		},
@@ -37,16 +39,10 @@ func initCommands() {
 	pasteCmd := Command{
 		cmd: "paste",
 		run: func(window *Window, args ...string) {
-			str := window.CurrentBuffer.Contents
-			index := window.CurrentBuffer.CursorPos
-
-			if index == len(str) {
-				str += window.Clipboard
-			} else {
-				str = str[:index] + window.Clipboard + str[index:]
+			if window.Clipboard != "" {
+				window.CurrentBuffer.PasteText(window, window.Clipboard)
+				PrintMessage(window, "Pasted text to buffer.")
 			}
-			window.CurrentBuffer.Contents = str
-			window.SetCursorPos(window.CurrentBuffer.CursorPos + len(window.Clipboard))
 		},
 	}
 
