@@ -202,6 +202,52 @@ func initCommands() {
 		},
 	}
 
+	setStyleCmd := Command{
+		cmd: "set-style",
+		run: func(window *Window, args ...string) {
+			if len(args) >= 1 {
+				input := args[0]
+
+				if input == "" {
+					return
+				}
+
+				if _, ok := AvailableStyles[input]; !ok {
+					PrintMessage(window, fmt.Sprintf("Could not set style to '%s'", input))
+					return
+				}
+
+				if ok := SetCurrentStyle(window.screen, input); ok {
+					PrintMessage(window, fmt.Sprintf("Setting style to '%s'", input))
+				} else {
+					PrintMessage(window, fmt.Sprintf("Could not set style to '%s'", input))
+				}
+
+				return
+			}
+
+			inputChannel := RequestInput(window, "Style to switch to:", "")
+			go func() {
+				input := <-inputChannel
+
+				if input == "" {
+					return
+				}
+
+				if _, ok := AvailableStyles[input]; !ok {
+					PrintMessage(window, fmt.Sprintf("Could not set style to '%s'", input))
+					return
+				}
+
+				if ok := SetCurrentStyle(window.screen, input); ok {
+					PrintMessage(window, fmt.Sprintf("Setting style to '%s'", input))
+				} else {
+					PrintMessage(window, fmt.Sprintf("Could not set style to '%s'", input))
+				}
+			}()
+		},
+	}
+
 	menuFileCmd := Command{
 		cmd: "menu-file",
 		run: func(window *Window, args ...string) {
@@ -297,6 +343,7 @@ func initCommands() {
 	commands["next-buffer"] = &nextBufferCmd
 	commands["new-buffer"] = &newBufferCmd
 	commands["close-buffer"] = &closeBufferCmd
+	commands["set-style"] = &setStyleCmd
 	commands["menu-file"] = &menuFileCmd
 	commands["menu-edit"] = &menuEditCmd
 	commands["menu-buffers"] = &menuBuffersCmd

@@ -72,15 +72,21 @@ func CreateWindow() (*Window, error) {
 		log.Fatalf("Failed to initialize screen: %s", err)
 	}
 
-	// Set screen style
-	SetCurrentStyle(screen)
-	screen.SetStyle(tcell.StyleDefault.Foreground(CurrentStyle.BufferAreaFg).Background(CurrentStyle.BufferAreaBg))
-
 	// Enable mouse
 	screen.EnableMouse()
 
 	// Set window screen field
 	window.screen = screen
+
+	// Try to set screen style to selected one
+	if ok := SetCurrentStyle(screen, Config.SelectedStyle); !ok {
+		// Try to set screen style to selected fallback one
+		if ok := SetCurrentStyle(screen, Config.FallbackStyle); !ok {
+			// Use hard-coded fallback style
+			screen.SetStyle(tcell.StyleDefault.Foreground(CurrentStyle.BufferAreaFg).Background(CurrentStyle.BufferAreaBg))
+			PrintMessage(&window, "Could not set style either to selected one nor to fallback one!")
+		}
+	}
 
 	// Initialize top menu
 	initTopMenu()

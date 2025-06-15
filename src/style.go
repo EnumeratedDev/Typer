@@ -46,8 +46,29 @@ type typerStyleYaml struct {
 	Colors map[string]string `yaml:"colors"`
 }
 
+var FallbackStyle = TyperStyle{
+	Name:        "fallback",
+	Description: "Fallback style",
+	StyleType:   "8-color",
+
+	BufferAreaBg:  tcell.ColorBlack,
+	BufferAreaFg:  tcell.ColorWhite,
+	BufferAreaSel: tcell.ColorNavy,
+	TopMenuBg:     tcell.ColorWhite,
+	TopMenuFg:     tcell.ColorBlack,
+	DropdownBg:    tcell.ColorWhite,
+	DropdownFg:    tcell.ColorBlack,
+	DropdownSel:   tcell.ColorNavy,
+	LineIndexBg:   tcell.ColorWhite,
+	LineIndexFg:   tcell.ColorBlack,
+	MessageBarBg:  tcell.ColorWhite,
+	MessageBarFg:  tcell.ColorBlack,
+	InputBarBg:    tcell.ColorWhite,
+	InputBarFg:    tcell.ColorBlack,
+}
+
 var AvailableStyles = make(map[string]TyperStyle)
-var CurrentStyle TyperStyle
+var CurrentStyle = FallbackStyle
 
 func readStyles() {
 	homeDir, err := os.UserHomeDir()
@@ -145,7 +166,7 @@ func readStyleYamlFile(filepath string) (TyperStyle, error) {
 	return style, nil
 }
 
-func SetCurrentStyle(screen tcell.Screen) {
+func SetCurrentStyle(screen tcell.Screen, styleName string) bool {
 	availableTypes := make([]string, 1)
 	availableTypes[0] = "8-color"
 	if screen.Colors() >= 16 {
@@ -158,30 +179,13 @@ func SetCurrentStyle(screen tcell.Screen) {
 		availableTypes = append(availableTypes, "true-color")
 	}
 
-	if style, ok := AvailableStyles[Config.SelectedStyle]; ok && slices.Index(availableTypes, style.StyleType) != -1 {
+	if style, ok := AvailableStyles[styleName]; ok && slices.Index(availableTypes, style.StyleType) != -1 {
 		CurrentStyle = style
-	} else if style, ok := AvailableStyles[Config.FallbackStyle]; ok {
-		CurrentStyle = style
-	} else {
-		CurrentStyle = TyperStyle{
-			Name:        "fallback",
-			Description: "Fallback style",
-			StyleType:   "8-color",
 
-			BufferAreaBg:  tcell.ColorBlack,
-			BufferAreaFg:  tcell.ColorWhite,
-			BufferAreaSel: tcell.ColorNavy,
-			TopMenuBg:     tcell.ColorWhite,
-			TopMenuFg:     tcell.ColorBlack,
-			DropdownBg:    tcell.ColorWhite,
-			DropdownFg:    tcell.ColorBlack,
-			DropdownSel:   tcell.ColorNavy,
-			LineIndexBg:   tcell.ColorWhite,
-			LineIndexFg:   tcell.ColorBlack,
-			MessageBarBg:  tcell.ColorWhite,
-			MessageBarFg:  tcell.ColorBlack,
-			InputBarBg:    tcell.ColorWhite,
-			InputBarFg:    tcell.ColorBlack,
-		}
+		screen.SetStyle(tcell.StyleDefault.Foreground(CurrentStyle.BufferAreaFg).Background(CurrentStyle.BufferAreaBg))
+		screen.Sync()
+
+		return true
 	}
+	return false
 }
