@@ -98,6 +98,16 @@ func (buffer *Buffer) Load() error {
 		return nil
 	}
 
+	// Replace tilde with home directory
+	if strings.HasPrefix(buffer.filename, "~/") {
+		homedir, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+
+		buffer.filename = filepath.Join(homedir, buffer.filename[2:])
+	}
+
 	content, err := os.ReadFile(buffer.filename)
 	if err != nil {
 		return err
@@ -111,6 +121,16 @@ func (buffer *Buffer) Save() error {
 	// Do not save if canSave is false or filename is not set
 	if !buffer.canSave || buffer.filename == "" {
 		return nil
+	}
+
+	// Replace tilde with home directory
+	if strings.HasPrefix(buffer.filename, "~/") {
+		homedir, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+
+		buffer.filename = filepath.Join(homedir, buffer.filename[2:])
 	}
 
 	// Append new line character at end of buffer contents if not present
