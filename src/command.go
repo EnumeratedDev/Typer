@@ -129,6 +129,132 @@ func initCommands() {
 		},
 	}
 
+	findCmd := Command{
+		cmd: "find",
+		run: func(window *Window, args ...string) {
+			if len(args) >= 1 {
+				input := args[0]
+
+				if input == "" {
+					return
+				}
+
+				pos := window.CurrentBuffer.FindSubstring(input, window.CurrentBuffer.CursorPos)
+				if pos >= 0 {
+					window.SetCursorPos(pos)
+					PrintMessage(window, "Match found.")
+				} else {
+					PrintMessage(window, fmt.Sprintf("'%s' not found in buffer!", input))
+				}
+
+				return
+			}
+
+			inputChannel := RequestInput(window, "Substring to search for:", "")
+			go func() {
+				input := <-inputChannel
+
+				if input == "" {
+					return
+				}
+
+				pos := window.CurrentBuffer.FindSubstring(input, window.CurrentBuffer.CursorPos)
+				if pos >= 0 {
+					window.SetCursorPos(pos)
+					PrintMessage(window, "Match found.")
+				} else {
+					PrintMessage(window, fmt.Sprintf("'%s' not found in buffer!", input))
+				}
+			}()
+		},
+	}
+
+	replaceCmd := Command{
+		cmd: "replace",
+		run: func(window *Window, args ...string) {
+			if len(args) >= 2 {
+				findStr := args[0]
+				replaceStr := args[1]
+
+				if findStr == "" {
+					return
+				}
+
+				pos := window.CurrentBuffer.FindAndReplaceSubstring(findStr, replaceStr, window.CurrentBuffer.CursorPos)
+				if pos >= 0 {
+					window.SetCursorPos(pos)
+					PrintMessage(window, "Match replaced successfully.")
+				} else {
+					PrintMessage(window, fmt.Sprintf("'%s' not found in buffer!", findStr))
+				}
+
+				return
+			}
+
+			go func() {
+				inputChannel := RequestInput(window, "Substring to search for:", "")
+				findStr := <-inputChannel
+				if findStr == "" {
+					return
+				}
+
+				inputChannel = RequestInput(window, "String to replace with:", "")
+				replaceStr := <-inputChannel
+
+				pos := window.CurrentBuffer.FindAndReplaceSubstring(findStr, replaceStr, window.CurrentBuffer.CursorPos)
+				if pos >= 0 {
+					window.SetCursorPos(pos)
+					PrintMessage(window, "Match replaced successfully.")
+				} else {
+					PrintMessage(window, fmt.Sprintf("'%s' not found in buffer!", findStr))
+				}
+			}()
+		},
+	}
+
+	replaceAllCmd := Command{
+		cmd: "replace-all",
+		run: func(window *Window, args ...string) {
+			if len(args) >= 2 {
+				findStr := args[0]
+				replaceStr := args[1]
+
+				if findStr == "" {
+					return
+				}
+
+				replacements := window.CurrentBuffer.FindAndReplaceAll(findStr, replaceStr)
+				if replacements > 0 {
+					window.SetCursorPos(window.CurrentBuffer.CursorPos)
+					PrintMessage(window, fmt.Sprintf("Replaced all %d matches successfully.", replacements))
+				} else {
+					PrintMessage(window, fmt.Sprintf("'%s' not found in buffer!", findStr))
+				}
+
+				return
+			}
+
+			go func() {
+				inputChannel := RequestInput(window, "Substring to search for:", "")
+				findStr := <-inputChannel
+				if findStr == "" {
+					return
+				}
+
+				inputChannel = RequestInput(window, "String to replace with:", "")
+				replaceStr := <-inputChannel
+
+				replacements := window.CurrentBuffer.FindAndReplaceAll(findStr, replaceStr)
+				if replacements > 0 {
+					window.SetCursorPos(window.CurrentBuffer.CursorPos)
+					PrintMessage(window, fmt.Sprintf("Replaced all %d matches successfully.", replacements))
+				} else {
+					PrintMessage(window, fmt.Sprintf("'%s' not found in buffer!", findStr))
+				}
+			}()
+		},
+	}
+
 	prevBufferCmd := Command{
 		cmd: "prev-buffer",
 		run: func(window *Window, args ...string) {
@@ -353,6 +479,9 @@ func initCommands() {
 	commands["save"] = &saveCmd
 	commands["open"] = &openCmd
 	commands["reload"] = &reloadCmd
+	commands["find"] = &findCmd
+	commands["replace"] = &replaceCmd
+	commands["replace-all"] = &replaceAllCmd
 	commands["prev-buffer"] = &prevBufferCmd
 	commands["next-buffer"] = &nextBufferCmd
 	commands["new-buffer"] = &newBufferCmd

@@ -248,6 +248,51 @@ func (buffer *Buffer) PasteText(window *Window, text string) {
 	window.SetCursorPos(buffer.CursorPos + len(text))
 }
 
+func (buffer *Buffer) FindSubstring(substring string, afterPos int) int {
+	// Return no match if afterPos is larger than the buffer contents size
+	if afterPos >= len(buffer.Contents) {
+		return -1
+	}
+
+	index := strings.Index(buffer.Contents[afterPos+1:], substring)
+
+	if index != -1 {
+		index += afterPos + 1
+	}
+	return index
+}
+
+func (buffer *Buffer) FindAndReplaceSubstring(substring, replacement string, afterPos int) int {
+	index := buffer.FindSubstring(substring, afterPos)
+
+	// Return if substring isn't found
+	if index == -1 {
+		return -1
+	}
+
+	// Replace substring with replacement string
+	buffer.Contents = buffer.Contents[:index] + replacement + buffer.Contents[index+len(substring):]
+
+	return index
+}
+
+func (buffer *Buffer) FindAndReplaceAll(substring, replacement string) int {
+	replacements := 0
+	index := 0
+	for index != -1 {
+		index = buffer.FindAndReplaceSubstring(substring, replacement, index)
+		if index != -1 {
+			replacements++
+		}
+
+		if index == 0 {
+			index++
+		}
+	}
+
+	return replacements
+}
+
 func GetOpenFileBuffer(filename string) *Buffer {
 	// Replace tilde with home directory
 	if filename != "~" && strings.HasPrefix(filename, "~/") {

@@ -14,9 +14,15 @@ keybindings:
   - keybinding: "Ctrl-O"
     cursor_modes: ["buffer"]
     command: "open"
-  - keybinding: "Ctrl-R"
+  - keybinding: "Ctrl-L"
     cursor_modes: ["buffer"]
     command: "reload"
+  - keybinding: "Ctrl-F"
+    cursor_modes: [ "buffer" ]
+    command: "find"
+  - keybinding: "Ctrl-R"
+    cursor_modes: [ "buffer" ]
+    command: "replace"
   - keybinding: "PgUp"
     cursor_modes: ["buffer"]
     command: "prev-buffer"
