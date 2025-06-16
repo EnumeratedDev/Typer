@@ -184,6 +184,62 @@ func (buffer *Buffer) GetSelectedText() string {
 	}
 }
 
+func (buffer *Buffer) CutText(window *Window) (string, int) {
+	if buffer.Selection == nil {
+		// Copy line
+		copiedText := ""
+		startOfLine := window.CurrentBuffer.CursorPos
+		endOfLine := window.CurrentBuffer.CursorPos
+
+		// Add current letter to copied text
+		if buffer.CursorPos < len(buffer.Contents) {
+			copiedText = string(buffer.Contents[buffer.CursorPos])
+		}
+
+		// Find end of line
+		for i := buffer.CursorPos + 1; i < len(buffer.Contents); i++ {
+			currentLetter := buffer.Contents[i]
+
+			endOfLine++
+			copiedText += string(currentLetter)
+			if currentLetter == '\n' {
+				break
+			}
+		}
+
+		// Find start of line
+		for i := buffer.CursorPos - 1; i >= 0; i-- {
+			currentLetter := buffer.Contents[i]
+			if currentLetter != '\n' {
+				startOfLine--
+				copiedText = string(currentLetter) + copiedText
+			} else {
+				break
+			}
+		}
+
+		// Remove line from buffer contents
+		buffer.Contents = buffer.Contents[:startOfLine] + buffer.Contents[endOfLine+1:]
+
+		return copiedText, 0
+	} else {
+		// Copy selection
+		copiedText := buffer.GetSelectedText()
+
+		// Remove selected text
+		edge1, edge2 := buffer.GetSelectionEdges()
+		if edge2 == len(buffer.Contents) {
+			edge2 = len(buffer.Contents) - 1
+		}
+
+		buffer.Contents = buffer.Contents[:edge1] + buffer.Contents[edge2+1:]
+		window.SetCursorPos(edge1)
+		buffer.Selection = nil
+
+		return copiedText, 1
+	}
+}
+
 func (buffer *Buffer) CopyText() (string, int) {
 	if buffer.Selection == nil {
 		// Copy line

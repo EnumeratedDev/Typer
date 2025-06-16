@@ -2,6 +2,9 @@ keybindings:
   - keybinding: "Ctrl-Q"
     cursor_modes: ["buffer"]
     command: "quit"
+  - keybinding: "Ctrl-X"
+    cursor_modes: ["buffer"]
+    command: "cut"
   - keybinding: "Ctrl-C"
     cursor_modes: ["buffer"]
     command: "copy"

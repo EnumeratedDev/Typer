@@ -18,6 +18,24 @@ var commands = make(map[string]*Command)
 
 func initCommands() {
 	// Setup commands
+	cutCmd := Command{
+		cmd: "cut",
+		run: func(window *Window, args ...string) {
+			// Cut text from buffer
+			copiedText, copyingMethod := window.CurrentBuffer.CutText(window)
+
+			// Put cut text to clipboard
+			window.Clipboard = copiedText
+
+			// Send appropriate message and remove text depending on copying method
+			if copyingMethod == 0 {
+				PrintMessage(window, "Copied line to clipboard.")
+			} else {
+				PrintMessage(window, "Copied selection to clipboard.")
+			}
+		},
+	}
+
 	copyCmd := Command{
 		cmd: "copy",
 		run: func(window *Window, args ...string) {
@@ -474,6 +492,7 @@ func initCommands() {
 	}
 
 	// Register commands
+	commands["cut"] = &cutCmd
 	commands["copy"] = &copyCmd
 	commands["paste"] = &pasteCmd
 	commands["save"] = &saveCmd

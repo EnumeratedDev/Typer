@@ -56,11 +56,13 @@ func initTopMenu() {
 				y++
 			}
 
-			d := CreateDropdownMenu([]string{"Copy", "Paste"}, 0, y, 0, func(i int) {
+			d := CreateDropdownMenu([]string{"Cut", "Copy", "Paste"}, 0, y, 0, func(i int) {
 				switch i {
 				case 0:
-					RunCommand(window, "copy")
+					RunCommand(window, "cut")
 				case 1:
+					RunCommand(window, "copy")
+				case 2:
 					RunCommand(window, "paste")
 				}
 				ClearDropdowns()
