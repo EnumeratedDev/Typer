@@ -20,5 +20,5 @@ make
 ```
 - Run the following command **with superuser privileges** to install Typer to your system
 ```shell
-make install SYSCONFDIR=/etc
+make install
 ```

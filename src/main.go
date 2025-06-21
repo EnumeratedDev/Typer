@@ -5,6 +5,8 @@ import (
 	"os"
 )
 
+var sysconfdir = "/etc/"
+
 func main() {
 	// Read config
 	readConfig()

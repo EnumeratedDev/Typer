@@ -8,7 +8,7 @@ GO ?= $(shell which go)
 
 build:
 	mkdir -p build
-	cd src/; $(GO) build -ldflags "-w" -o ../build/typer
+	cd src/; $(GO) build -ldflags "-w -X 'main.sysconfdir=$(SYSCONFDIR)'" -o ../build/typer
 
 install: build/typer
 	# Create directories

@@ -40,8 +40,8 @@ func readKeybindings() {
 		if err != nil {
 			log.Fatalf("Could not unmarshal keybindings.yml: %s", err)
 		}
-	} else if _, err := os.Stat("/etc/typer/keybindings.yml"); err == nil {
-		reader, err := os.Open("/etc/typer/keybindings.yml")
+	} else if _, err := os.Stat(path.Join(sysconfdir, "typer/keybindings.yml")); err == nil {
+		reader, err := os.Open(path.Join(sysconfdir, "typer/keybindings.yml"))
 		if err != nil {
 			log.Fatalf("Could not read keybindings.yml: %s", err)
 		}

@@ -94,14 +94,14 @@ func readStyles() {
 			}
 		}
 	}
-	if stat, err := os.Stat("/etc/typer/styles/"); err == nil && stat.IsDir() {
-		entries, err := os.ReadDir("/etc/typer/styles/")
+	if stat, err := os.Stat(path.Join(sysconfdir, "typer/styles/")); err == nil && stat.IsDir() {
+		entries, err := os.ReadDir(path.Join(sysconfdir, "typer/styles/"))
 		if err != nil {
 			log.Fatalf("Could not read user style directory: %s", err)
 		}
 
 		for _, entry := range entries {
-			entryPath := path.Join("/etc/typer/styles/", entry.Name())
+			entryPath := path.Join(path.Join(sysconfdir, "typer/styles/"), entry.Name())
 			style, err := readStyleYamlFile(entryPath)
 			if err != nil {
 				log.Fatalf("Could not read style file (%s): %s", entryPath, err)

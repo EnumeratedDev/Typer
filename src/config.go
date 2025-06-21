@@ -44,8 +44,8 @@ func readConfig() {
 		if err != nil {
 			log.Fatalf("Could not unmarshal config.yml: %s", err)
 		}
-	} else if _, err := os.Stat("/etc/typer/config.yml"); err == nil {
-		reader, err := os.Open("/etc/typer/config.yml")
+	} else if _, err := os.Stat(path.Join(sysconfdir, "typer/config.yml")); err == nil {
+		reader, err := os.Open(path.Join(sysconfdir, "typer/config.yml"))
 		if err != nil {
 			log.Fatalf("Could not read config.yml: %s", err)
 		}
