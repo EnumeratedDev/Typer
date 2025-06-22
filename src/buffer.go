@@ -134,7 +134,7 @@ func (buffer *Buffer) Save() error {
 	}
 
 	// Append new line character at end of buffer contents if not present
-	if buffer.Contents[len(buffer.Contents)-1] != '\n' {
+	if buffer.Contents == "" || buffer.Contents[len(buffer.Contents)-1] != '\n' {
 		buffer.Contents += "\n"
 	}
 
