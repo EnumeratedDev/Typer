@@ -18,7 +18,7 @@ func RequestInput(window *Window, text string, defaultInput string) chan string 
 	request := &TyperInputRequest{
 		Text:         text,
 		input:        defaultInput,
-		cursorPos:    0,
+		cursorPos:    len(defaultInput),
 		inputChannel: make(chan string),
 	}
 
